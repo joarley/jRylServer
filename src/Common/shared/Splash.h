@@ -1,0 +1,18 @@
+char Splash[] =
+CL_YELLOW"          _____             "CL_LT_GREEN"/ \\ / \\ / \\ / \\ / \\ / \\ / \\ / \\ / \\\n"
+CL_YELLOW"         ""/\\    \\           "CL_LT_GREEN"( R | y | l | S | e | r | v | e | r )\n"
+CL_YELLOW"        /::\\    \\           "CL_LT_GREEN"\\_/ \\_/ \\_/ \\_/ \\_/ \\_/ \\_/ \\_/ \\_/\n"
+CL_YELLOW"        \\:::\\    \\\n"
+CL_YELLOW"         \\:::\\    \\                      "CL_GRAY"%s\n"
+CL_YELLOW"          \\:::\\    \\\n"
+CL_YELLOW"           \\:::\\    \\         "CL_GRAY"Copyright (C) 2011, "CL_YELLOW"Joarley Ferreira\n"
+CL_YELLOW"           /::::\\    \\\n"
+CL_YELLOW"  _____   /::::::\\    \\               "CL_GRAY"SVN Revision: %d\n"
+CL_YELLOW" /\\    \\ /:::/\\:::\\    \\\n"
+CL_YELLOW"/::\\    /:::/  \\:::\\____\\\n"
+CL_YELLOW"\\:::\\  /:::/    \\::/    /\n"
+CL_YELLOW" \\:::\\/:::/    / \\/____/\n"
+CL_YELLOW"  \\::::::/    /\n"
+CL_YELLOW"   \\::::/    /\n"
+CL_YELLOW"    \\::/    /\n"
+CL_YELLOW"     \\/____/\n\n";
