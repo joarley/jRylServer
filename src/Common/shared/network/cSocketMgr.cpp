@@ -21,24 +21,15 @@ namespace shared {
 namespace network {
 
 
-void SocketMgr::RunServer() {
-    while(m_running) {
-        boost::system::error_code ec;
-        m_service.run(ec);
-        if(ec) {
-            Logger::GetInstance().ShowError("while processing SocketServers tasks: ", ec.message().c_str());
-        }
-        boost::this_thread::sleep(boost::posix_time::millisec(1));
-    }
-}
-
 void SocketMgr::Start() {
     m_running = true;
-    m_runServerThread = boost::thread(boost::bind(&SocketMgr::RunServer, this));
+    m_work = new boost::asio::io_service::work(m_service);
+    m_runServerThread = boost::thread(boost::bind(&boost::asio::io_service::run, &m_service));
 }
 
 void SocketMgr::Stop() {
     m_running = false;
+    delete m_work;
     m_service.stop();
     m_runServerThread.join();
 

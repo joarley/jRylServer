@@ -28,10 +28,10 @@ public:
     void DestroyServer(SocketServer* server);
 private:
     boost::asio::io_service m_service;
+    boost::asio::io_service::work* m_work;
+    boost::thread m_runServerThread;
     map<string, SocketServer*> m_servers;
     bool m_running;
-    void RunServer();
-    boost::thread m_runServerThread;
 };
 
 } //namespace network
