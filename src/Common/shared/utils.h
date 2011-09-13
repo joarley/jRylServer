@@ -2,6 +2,7 @@
 #define _UTILS_H_
 
 #include <ctype.h>
+#include <cstring>
 
 #include "shared/typedef.h"
 
@@ -66,6 +67,36 @@ template<class T> T j_atoui(const char *nptr) {
     return acc;
 }
 
+template<class T> char* j_itoa(T in) {
+    char buf[19 + 2] = {};   //19 enough for 64 bit integer
+    char *p = buf + 19 + 1;	/* points to terminating '\0' */
+    if (in >= 0) {
+        do {
+            *--p = '0' + (in % 10);
+            in /= 10;
+        } while (in != 0);
+    }
+    else {			/* i < 0 */
+        do {
+            *--p = '0' - (in % 10);
+            in /= 10;
+        } while (in != 0);
+        *--p = '-';
+    }
+
+    char* value = new char[strlen(p) + 1];
+    strcpy(value, p);
+    return value;
+}
+
+template<class T> char* j_ftoa(T in) {
+    char* value = new char[100];
+    sprintf(value, "%f", in);
+}
+
+template<class T> T j_atof(const char *nptr) {
+    return T(atof(nptr));
+}
 } //namespace shared
 } //namespace common
 } //namespace jRylServer
