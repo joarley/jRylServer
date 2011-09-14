@@ -44,12 +44,15 @@ public:
     byte* ToByte();
     bool ToBool();
 
-    size_t GetLenght;
+    size_t GetLenght();
     FieldType GetType();
 
     void SetValue(void* value);
     void SetValueLength(size_t valueLength);
     void SetType(FieldType type);
+
+    DBField(){}
+    ~DBField(){delete[] m_value; }
 private:
     void* m_value;
     size_t m_valueLength;
