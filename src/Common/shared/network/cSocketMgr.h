@@ -17,7 +17,7 @@ namespace common {
 namespace shared {
 namespace network {
 
-class SocketMgr:public  iSingleton<SocketMgr> {
+class SocketMgr:public  Singleton<SocketMgr> {
     MAKE_SINGLETON(SocketMgr);
 public:
     void Start();

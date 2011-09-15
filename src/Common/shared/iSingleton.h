@@ -3,53 +3,53 @@
 
 #include "shared/typedef.h"
 
-#define MAKE_SINGLETON(CLASS) friend class jRylServer::common::shared::iSingleton<CLASS>
+#define MAKE_SINGLETON(CLASS) friend class jRylServer::common::shared::Singleton<CLASS>
 
 namespace jRylServer {
 namespace common {
 namespace shared {
 
-template<class T> class iSingleton {
+template<class T> class Singleton {
 public: 
     static T& GetInstance();
     static T* GetInstance_ptr();
     static void DestroyInstance();
 protected:
-    inline iSingleton() {
-        iSingleton::ms_Instance = static_cast<T*>(this); 
+    inline Singleton() {
+        Singleton::ms_Instance = static_cast<T*>(this); 
     }
 
-    inline ~iSingleton() {
-        iSingleton::ms_Instance = NULL; 
+    inline ~Singleton() {
+        Singleton::ms_Instance = NULL; 
     }
 private:
     static T* ms_Instance; 
-    inline iSingleton(iSingleton const&) {}
-    inline iSingleton& operator=(iSingleton const&) { return *this; }
+    inline Singleton(Singleton const&) {}
+    inline Singleton& operator=(Singleton const&) { return *this; }
 };
 
-template<class T> T& iSingleton<T>::GetInstance() {
-    if ( iSingleton::ms_Instance == NULL ) {
-        iSingleton::ms_Instance = new T;
+template<class T> T& Singleton<T>::GetInstance() {
+    if ( Singleton::ms_Instance == NULL ) {
+        Singleton::ms_Instance = new T;
     }
-    return *(iSingleton::ms_Instance);
+    return *(Singleton::ms_Instance);
 }
 
-template<class T> T* iSingleton<T>::GetInstance_ptr() {
-    if ( iSingleton::ms_Instance == NULL ) {
-        iSingleton::ms_Instance = new T;
+template<class T> T* Singleton<T>::GetInstance_ptr() {
+    if ( Singleton::ms_Instance == NULL ) {
+        Singleton::ms_Instance = new T;
     }
-    return iSingleton::ms_Instance;
+    return Singleton::ms_Instance;
 }
 
-template<class T> void iSingleton<T>::DestroyInstance() {
-    if ( iSingleton::ms_Instance != NULL ) {
-        delete iSingleton::ms_Instance;
-        iSingleton::ms_Instance = NULL;
+template<class T> void Singleton<T>::DestroyInstance() {
+    if ( Singleton::ms_Instance != NULL ) {
+        delete Singleton::ms_Instance;
+        Singleton::ms_Instance = NULL;
     }
 }
 
-template<class T> T* iSingleton<T>::ms_Instance = NULL;
+template<class T> T* Singleton<T>::ms_Instance = NULL;
 
 } //namespace shared
 } //namespace common

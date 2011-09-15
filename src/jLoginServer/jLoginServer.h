@@ -16,7 +16,7 @@ using namespace std;
 namespace jRylServer {
     using namespace common::shared;
 
-    class jLoginServer : iStartupClass {
+    class jLoginServer : StartupClass {
     public:
         jLoginServer(vector<string> params);
         bool LoadConfig();

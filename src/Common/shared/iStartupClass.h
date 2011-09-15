@@ -4,7 +4,7 @@ namespace jRylServer {
 namespace common {
 namespace shared {
 
-class iStartupClass {
+class StartupClass {
     virtual bool LoadConfig() = 0;
     virtual int Start() = 0;
 };

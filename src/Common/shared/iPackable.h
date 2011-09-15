@@ -13,7 +13,7 @@ namespace shared {
 class Buffer;
 typedef boost::shared_ptr<Buffer> Buffer_ptr;
 
-class iPackable {
+class Packable {
 public:
     virtual void Pack(Buffer_ptr buffer) = 0;
     virtual void Unpack(Buffer_ptr buffer) = 0;

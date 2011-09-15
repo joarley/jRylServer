@@ -14,7 +14,7 @@ namespace common {
 namespace shared {
 namespace crypt {
 
-class CryptEngine: public  iSingleton<CryptEngine>{
+class CryptEngine: public  Singleton<CryptEngine>{
 public:
     MAKE_SINGLETON(CryptEngine);
 
@@ -24,7 +24,7 @@ public:
         GGERRO_Checksum = 4
     };
 
-    typedef struct _CRYPTKEY : iPackable {
+    typedef struct _CRYPTKEY : Packable {
         uint8 Key1;
         uint8 Key2;
         uint16 CodePage;

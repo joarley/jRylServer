@@ -20,6 +20,7 @@ char* DBField::ToString() {
         case FT_STRING:
             result = new char[m_valueLength];
             memcpy(result, m_value, m_valueLength);
+            break;
         case FT_FLOAT64:
             result = j_ftoa(*(f64*) m_value);
             break;
@@ -54,16 +55,17 @@ char* DBField::ToString() {
             if (*(int8*) m_value) {
                 result = new char[strlen("true")];
                 strcpy(result, "true");
-                break;
             } else {
-                char* value = new char[strlen("false")];
-                strcpy(value, "false");
-                return value;
+                result = new char[strlen("false")];
+                strcpy(result, "false");
             }
+            break;
         case FT_BYTE:
             result = (char*) new byte[m_valueLength];
             memcpy(result, m_value, m_valueLength);
             break;
+        default:
+            return NULL;
     }
 
     return result;
@@ -77,26 +79,30 @@ f64 DBField::ToFloat64() {
             return *(f64*) m_value;
         case FT_FLOAT32:
             return *(f32*) m_value;
+        case FT_INT64:
+            return (f64)*(int64*) m_value;
         case FT_INT32:
-            return *(int32*) m_value;
+            return (f64)*(int32*) m_value;
         case FT_INT16:
-            return *(int16*) m_value;
+            return (f64)*(int16*) m_value;
         case FT_INT8:
-            return *(int8*) m_value;
+            return (f64)*(int8*) m_value;
+        case FT_UINT64:
+            return (f64)*(uint64*) m_value;
         case FT_UINT32:
-            return *(uint32*) m_value;
+            return (f64)*(uint32*) m_value;
         case FT_UINT16:
-            return *(uint16*) m_value;
+            return (f64)*(uint16*) m_value;
         case FT_UINT8:
-            return *(uint8*) m_value;
+            return (f64)*(uint8*) m_value;
         case FT_BOOL:
             if (*(int8*) m_value) {
-                return 1;
+                return 1.0;
             } else {
-                return 0;
+                return 0.0;
             }
         default:
-            return 0;
+            return 0.0;
     }
 }
 
@@ -104,53 +110,67 @@ f32 DBField::ToFloat32() {
     switch (m_type) {
         case FT_STRING:
             return j_atof<f32 > ((char*) m_value);
+        case FT_FLOAT64:
+            return (f32)*(f64*) m_value;
         case FT_FLOAT32:
             return *(f32*) m_value;
+        case FT_INT64:
+            return (f32)*(int64*) m_value;
+        case FT_INT32:
+            return (f32)*(int32*) m_value;
         case FT_INT16:
-            return *(int16*) m_value;
+            return (f32)*(int16*) m_value;
         case FT_INT8:
-            return *(int8*) m_value;
+            return (f32)*(int8*) m_value;
+        case FT_UINT64:
+            return (f32)*(uint64*) m_value;
+        case FT_UINT32:
+            return (f32)*(uint32*) m_value;
         case FT_UINT16:
-            return *(uint16*) m_value;
+            return (f32)*(uint16*) m_value;
         case FT_UINT8:
-            return *(uint8*) m_value;
+            return (f32)*(uint8*) m_value;
         case FT_BOOL:
             if (*(int8*) m_value) {
-                return 1;
+                return 1.0;
             } else {
-                return 0;
+                return 0.0;
             }
         default:
-            return 0;
+            return 0.0;
     }
 }
 
 int64 DBField::ToInt64() {
     switch (m_type) {
         case FT_STRING:
-            return j_atoi<int64 > ((char*) m_value);
+            return j_atof<int64 > ((char*) m_value);
+        case FT_FLOAT64:
+            return (int64)*(f64*) m_value;
+        case FT_FLOAT32:
+            return (int64)*(f32*) m_value;
         case FT_INT64:
             return *(int64*) m_value;
         case FT_INT32:
-            return *(int32*) m_value;
+            return (int64)*(int32*) m_value;
         case FT_INT16:
-            return *(int16*) m_value;
+            return (int64)*(int16*) m_value;
         case FT_INT8:
-            return *(int8*) m_value;
+            return (int64)*(int8*) m_value;
+        case FT_UINT64:
+            return (int64)*(uint64*) m_value;
         case FT_UINT32:
-            return *(uint32*) m_value;
+            return (int64)*(uint32*) m_value;
         case FT_UINT16:
-            return *(uint16*) m_value;
+            return (int64)*(uint16*) m_value;
         case FT_UINT8:
-            return *(uint8*) m_value;
+            return (int64)*(uint8*) m_value;
         case FT_BOOL:
             if (*(int8*) m_value) {
                 return 1;
             } else {
                 return 0;
             }
-        case FT_BYTE:
-            return 0;
         default:
             return 0;
     }
@@ -159,17 +179,27 @@ int64 DBField::ToInt64() {
 int32 DBField::ToInt32() {
     switch (m_type) {
         case FT_STRING:
-            return j_atoi<int32 > ((char*) m_value);
+            return j_atof<int32 > ((char*) m_value);
+        case FT_FLOAT64:
+            return (int32)*(f64*) m_value;
+        case FT_FLOAT32:
+            return (int32)*(f32*) m_value;
+        case FT_INT64:
+            return (int32)*(int64*) m_value;
         case FT_INT32:
             return *(int32*) m_value;
         case FT_INT16:
-            return *(int16*) m_value;
+            return (int32)*(int16*) m_value;
         case FT_INT8:
-            return *(int8*) m_value;
+            return (int32)*(int8*) m_value;
+        case FT_UINT64:
+            return (int32)*(uint64*) m_value;
+        case FT_UINT32:
+            return (int32)*(uint32*) m_value;
         case FT_UINT16:
-            return *(uint16*) m_value;
+            return (int32)*(uint16*) m_value;
         case FT_UINT8:
-            return *(uint8*) m_value;
+            return (int32)*(uint8*) m_value;
         case FT_BOOL:
             if (*(int8*) m_value) {
                 return 1;
@@ -184,13 +214,27 @@ int32 DBField::ToInt32() {
 int16 DBField::ToInt16() {
     switch (m_type) {
         case FT_STRING:
-            return j_atoi<int16 > ((char*) m_value);
+            return j_atof<int16 > ((char*) m_value);
+        case FT_FLOAT64:
+            return (int16)*(f64*) m_value;
+        case FT_FLOAT32:
+            return (int16)*(f32*) m_value;
+        case FT_INT64:
+            return (int16)*(int64*) m_value;
+        case FT_INT32:
+            return (int16)*(int32*) m_value;
         case FT_INT16:
             return *(int16*) m_value;
         case FT_INT8:
-            return *(int8*) m_value;
+            return (int16)*(int8*) m_value;
+        case FT_UINT64:
+            return (int16)*(uint64*) m_value;
+        case FT_UINT32:
+            return (int16)*(uint32*) m_value;
+        case FT_UINT16:
+            return (int16)*(uint16*) m_value;
         case FT_UINT8:
-            return *(uint8*) m_value;
+            return (int16)*(uint8*) m_value;
         case FT_BOOL:
             if (*(int8*) m_value) {
                 return 1;
@@ -205,9 +249,27 @@ int16 DBField::ToInt16() {
 int8 DBField::ToInt8() {
     switch (m_type) {
         case FT_STRING:
-            return j_atoi<int8 > ((char*) m_value);
+            return j_atof<int8 > ((char*) m_value);
+        case FT_FLOAT64:
+            return (int8)*(f64*) m_value;
+        case FT_FLOAT32:
+            return (int8)*(f32*) m_value;
+        case FT_INT64:
+            return (int8)*(int64*) m_value;
+        case FT_INT32:
+            return (int8)*(int32*) m_value;
+        case FT_INT16:
+            return (int8)*(int16*) m_value;
         case FT_INT8:
             return *(int8*) m_value;
+        case FT_UINT64:
+            return (int8)*(uint64*) m_value;
+        case FT_UINT32:
+            return (int8)*(uint32*) m_value;
+        case FT_UINT16:
+            return (int8)*(uint16*) m_value;
+        case FT_UINT8:
+            return (int8)*(uint8*) m_value;
         case FT_BOOL:
             if (*(int8*) m_value) {
                 return 1;
@@ -222,21 +284,27 @@ int8 DBField::ToInt8() {
 uint64 DBField::ToUInt64() {
     switch (m_type) {
         case FT_STRING:
-            return j_atoui<uint64 > ((char*) m_value);
+            return j_atof<uint64 > ((char*) m_value);
+        case FT_FLOAT64:
+            return (uint64)*(f64*) m_value;
+        case FT_FLOAT32:
+            return (uint64)*(f32*) m_value;
+        case FT_INT64:
+            return (uint64)*(int64*) m_value;
         case FT_INT32:
-            return *(int32*) m_value;
+            return (uint64)*(int32*) m_value;
         case FT_INT16:
-            return *(int16*) m_value;
+            return (uint64)*(int16*) m_value;
         case FT_INT8:
-            return *(int8*) m_value;
+            return (uint64)*(int8*) m_value;
         case FT_UINT64:
             return *(uint64*) m_value;
         case FT_UINT32:
-            return *(uint32*) m_value;
+            return (uint64)*(uint32*) m_value;
         case FT_UINT16:
-            return *(uint16*) m_value;
+            return (uint64)*(uint16*) m_value;
         case FT_UINT8:
-            return *(uint8*) m_value;
+            return (uint64)*(uint8*) m_value;
         case FT_BOOL:
             if (*(int8*) m_value) {
                 return 1;
@@ -251,17 +319,27 @@ uint64 DBField::ToUInt64() {
 uint32 DBField::ToUInt32() {
     switch (m_type) {
         case FT_STRING:
-            return j_atoui<uint32 > ((char*) m_value);
+            return j_atof<uint32 > ((char*) m_value);
+        case FT_FLOAT64:
+            return (uint32)*(f64*) m_value;
+        case FT_FLOAT32:
+            return (uint32)*(f32*) m_value;
+        case FT_INT64:
+            return (uint32)*(int64*) m_value;
+        case FT_INT32:
+            return (uint32)*(int32*) m_value;
         case FT_INT16:
-            return *(int16*) m_value;
+            return (uint32)*(int16*) m_value;
         case FT_INT8:
-            return *(int8*) m_value;
+            return (uint32)*(int8*) m_value;
+        case FT_UINT64:
+            return (uint32)*(uint64*) m_value;
         case FT_UINT32:
             return *(uint32*) m_value;
         case FT_UINT16:
-            return *(uint16*) m_value;
+            return (uint32)*(uint16*) m_value;
         case FT_UINT8:
-            return *(uint8*) m_value;
+            return (uint32)*(uint8*) m_value;
         case FT_BOOL:
             if (*(int8*) m_value) {
                 return 1;
@@ -276,13 +354,27 @@ uint32 DBField::ToUInt32() {
 uint16 DBField::ToUInt16() {
     switch (m_type) {
         case FT_STRING:
-            return j_atoui<uint16 > ((char*) m_value);
+            return j_atof<uint16 > ((char*) m_value);
+        case FT_FLOAT64:
+            return (uint16)*(f64*) m_value;
+        case FT_FLOAT32:
+            return (uint16)*(f32*) m_value;
+        case FT_INT64:
+            return (uint16)*(int64*) m_value;
+        case FT_INT32:
+            return (uint16)*(int32*) m_value;
+        case FT_INT16:
+            return (uint16)*(int16*) m_value;
         case FT_INT8:
-            return *(int8*) m_value;
+            return (uint16)*(int8*) m_value;
+        case FT_UINT64:
+            return (uint16)*(uint64*) m_value;
+        case FT_UINT32:
+            return (uint16)*(uint32*) m_value;
         case FT_UINT16:
             return *(uint16*) m_value;
         case FT_UINT8:
-            return *(uint8*) m_value;
+            return (uint16)*(uint8*) m_value;
         case FT_BOOL:
             if (*(int8*) m_value) {
                 return 1;
@@ -297,7 +389,25 @@ uint16 DBField::ToUInt16() {
 uint8 DBField::ToUInt8() {
     switch (m_type) {
         case FT_STRING:
-            return j_atoui<uint8 > ((char*) m_value);
+            return j_atof<uint8 > ((char*) m_value);
+        case FT_FLOAT64:
+            return (uint8)*(f64*) m_value;
+        case FT_FLOAT32:
+            return (uint8)*(f32*) m_value;
+        case FT_INT64:
+            return (uint8)*(int64*) m_value;
+        case FT_INT32:
+            return (uint8)*(int32*) m_value;
+        case FT_INT16:
+            return (uint8)*(int16*) m_value;
+        case FT_INT8:
+            return (uint8)*(int8*) m_value;
+        case FT_UINT64:
+            return (uint8)*(uint64*) m_value;
+        case FT_UINT32:
+            return (uint8)*(uint32*) m_value;
+        case FT_UINT16:
+            return (uint8)*(uint16*) m_value;
         case FT_UINT8:
             return *(uint8*) m_value;
         case FT_BOOL:
@@ -312,7 +422,7 @@ uint8 DBField::ToUInt8() {
 }
 
 byte* DBField::ToByte() {
-    return (byte*) m_value;
+    return m_value;
 }
 
 bool DBField::ToBool() {
@@ -362,8 +472,7 @@ DBField::FieldType DBField::GetType() {
     return m_type;
 }
 
-
-void DBField::SetValue(void* value) {
+void DBField::SetValue(byte* value) {
     m_value = value;
 }
 

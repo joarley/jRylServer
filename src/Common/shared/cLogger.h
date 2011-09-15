@@ -82,7 +82,7 @@ namespace jRylServer {
 namespace common {
 namespace shared {
 
-class Logger: public iSingleton<Logger> {
+class Logger: public Singleton<Logger> {
 public:
     MAKE_SINGLETON(Logger);
     void ClearScreen();

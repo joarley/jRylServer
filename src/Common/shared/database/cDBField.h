@@ -14,6 +14,7 @@ namespace database {
 
 class DBField {
 public:
+
     enum FieldType {
         FT_STRING,
         FT_FLOAT64,
@@ -47,14 +48,18 @@ public:
     size_t GetLenght();
     FieldType GetType();
 
-    void SetValue(void* value);
+    void SetValue(byte* value);
     void SetValueLength(size_t valueLength);
     void SetType(FieldType type);
 
-    DBField(){}
-    ~DBField(){delete[] m_value; }
+    DBField() {
+    }
+
+    ~DBField() {
+        delete[] m_value;
+    }
 private:
-    void* m_value;
+    byte* m_value;
     size_t m_valueLength;
     FieldType m_type;
 };

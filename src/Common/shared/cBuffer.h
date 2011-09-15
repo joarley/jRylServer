@@ -73,12 +73,12 @@ public:
         return *this;
     }
 
-    inline Buffer& AddPack(iPackable& value) {
+    inline Buffer& AddPack(Packable& value) {
         value.Pack(shared_from_this());
         return *this;
     }
 
-    inline Buffer& AddPack(iPackable& value, int offset) {
+    inline Buffer& AddPack(Packable& value, int offset) {
         uint writeof = m_writerOffset;
         SetWriteOffset(offset);
         value.Pack(shared_from_this());
@@ -184,11 +184,11 @@ public:
         return *(T*) & m_buffer[offset];
     }
 
-    void GetPack(iPackable& packable) {
+    void GetPack(Packable& packable) {
         packable.Unpack(shared_from_this());
     }
 
-    void GetPack(iPackable& packable, int offset) {
+    void GetPack(Packable& packable, int offset) {
         uint readerof = m_readerOffset;
         SetReaderOffset(offset);
         packable.Unpack(shared_from_this());

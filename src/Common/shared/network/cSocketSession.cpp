@@ -151,7 +151,7 @@ void SocketSession::Stop() {
     }
     boost::system::error_code ec;
     m_Connected = false;
-    m_Socket.cancel(ec);
+    //m_Socket.cancel(ec);
     m_Socket.close(ec);
     m_codPacketProcess.notify_one();
     m_PacketProcessThread.join();
