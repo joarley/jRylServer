@@ -22,26 +22,30 @@ namespace network {
 
 
 void SocketMgr::Start() {
-    m_running = true;
-    m_work = new boost::asio::io_service::work(m_service);
-    m_runServerThread = boost::thread(boost::bind(&boost::asio::io_service::run, &m_service));
+    if(!m_running) {
+        m_running = true;
+        m_work = new boost::asio::io_service::work(m_service);
+        m_runServerThread = boost::thread(boost::bind(&boost::asio::io_service::run, &m_service));
+    }
 }
 
 void SocketMgr::Stop() {
-    m_running = false;
-    delete m_work;
-    m_service.stop();
-    m_runServerThread.join();
+    if(m_running) {
+        vector<SocketServer*> servers;
 
-    vector<SocketServer*> servers;
+        typedef std::map<string, SocketServer*> MapType;
+        BOOST_FOREACH(MapType::value_type server, m_servers) {
+            servers.push_back(server.second);
+        }
 
-    typedef std::map<string, SocketServer*> MapType;
-    BOOST_FOREACH(MapType::value_type server, m_servers) {
-        servers.push_back(server.second);
-    }
+        for (int i = 0; i < (int) servers.size(); i++) {
+            DestroyServer(servers[i]);
+        }
 
-    for (int i = 0; i < (int) servers.size(); i++) {
-        DestroyServer(servers[i]);
+        delete m_work;
+        m_service.stop();
+        m_runServerThread.join();
+        m_running = false;
     }
 }
 

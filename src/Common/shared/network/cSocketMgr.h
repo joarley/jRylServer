@@ -27,6 +27,7 @@ public:
     void DestroyServer(string name);
     void DestroyServer(SocketServer* server);
 private:
+    SocketMgr() {m_running = false;}
     boost::asio::io_service m_service;
     boost::asio::io_service::work* m_work;
     boost::thread m_runServerThread;

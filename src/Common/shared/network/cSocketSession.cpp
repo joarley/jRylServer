@@ -28,7 +28,6 @@ namespace network {
 
 SocketSession::SocketSession(io_service& ioservice) : m_Socket(ioservice) {
     m_isWriting = false;
-    m_isProcessing = false;
 }
 
 tcp::socket& SocketSession::Socket() {
@@ -53,20 +52,19 @@ bool SocketSession::Start(SocketServer& server) {
 
 void SocketSession::hPacketProcess() {
     while (m_Connected) {
+        boost::unique_lock<boost::mutex> umu(m_ProcessingMutex);
+        m_codPacketProcess.wait(umu);
+
         while (!m_ReadQueue.empty() && m_Connected) {
             m_ReadQueueMutex.lock();
             Buffer_ptr buff = m_ReadQueue.front();
             m_ReadQueue.pop();
             m_ReadQueueMutex.unlock();
+            
             if (PacketProcessCallBack != NULL) {
                 PacketProcessCallBack(shared_from_this(), buff);
             }
         }
-        if(!m_Connected) {
-            break;
-        }
-        boost::unique_lock<boost::mutex> umu(m_ProcessingMutex);
-        m_codPacketProcess.wait(umu);
     }
     m_ReadQueueMutex.lock();
     m_ReadQueue = queue<Buffer_ptr>();
@@ -75,17 +73,13 @@ void SocketSession::hPacketProcess() {
 
 void SocketSession::hRead(Buffer_ptr buff, const boost::system::error_code& error, size_t bytes_transferred) {
     if (!error && m_Connected) {
-        if(m_ReadQueue.size() > 512) {
-            Logger::GetInstance().ShowError("Maximum size of the read queue reached client address: %s", m_Socket.remote_endpoint().address().to_string().c_str());
-        } else {
-            buff->SetMaxLength(bytes_transferred);
-            buff->SetLength(bytes_transferred);
-            m_ReadQueueMutex.lock();
-            m_ReadQueue.push(buff);
-            m_ReadQueueMutex.unlock();
-        }
-        m_codPacketProcess.notify_all();
+        m_ReadQueueMutex.lock();
         
+        buff->SetMaxLength(bytes_transferred);
+        buff->SetLength(bytes_transferred);
+            
+        m_ReadQueue.push(buff);
+                
         buff.reset(new Buffer());
 
         m_Socket.async_receive(buffer(buff->Data(), buff->MaxLength()),
@@ -93,6 +87,8 @@ void SocketSession::hRead(Buffer_ptr buff, const boost::system::error_code& erro
           buff,
           boost::asio::placeholders::error,
           boost::asio::placeholders::bytes_transferred));
+        m_ReadQueueMutex.unlock();
+        m_codPacketProcess.notify_all();
     } else {
         Stop();
     }
@@ -106,43 +102,45 @@ void SocketSession::Write(Buffer_ptr buff) {
     if (!m_Connected) {
         return;
     }
+
     m_isWritingMutex.lock();
-    if (!m_isWriting && m_Connected) {
+    m_WriteQueueMutex.lock();
+    
+    m_WriteQueue.push(buff);
+    if (!m_isWriting) {
         m_Socket.async_send(buffer(buff->Data(), buff->Length()),
           boost::bind(&SocketSession::hWrite, this, buff, boost::asio::placeholders::error));
         m_isWriting = true;
-    } else if (m_Connected) {
-        m_WriteQueueMutex.lock();
-        m_WriteQueue.push(buff);
-        m_WriteQueueMutex.unlock();
     }
+    
+    m_WriteQueueMutex.unlock();
     m_isWritingMutex.unlock();
 }
 
 void SocketSession::hWrite(Buffer_ptr buff, const boost::system::error_code& error) {
-    if (!error && m_Connected) {
-        m_isWritingMutex.lock();
+    if (!m_Connected) {
+        return;
+    }
+
+    m_isWritingMutex.lock();
+    m_WriteQueueMutex.lock();
+    
+    if (!error) {
+        m_WriteQueue.pop();
         if (!m_WriteQueue.empty()) {
-            m_WriteQueueMutex.lock();
-            Buffer_ptr b = m_WriteQueue.front();
-            m_WriteQueue.pop();
-            b.reset();
-            if (m_WriteQueue.size() > 0) {
-                Buffer_ptr buff = m_WriteQueue.front();
-                m_Socket.async_send(buffer(buff->Data(), buff->Length()),
-                  boost::bind(&SocketSession::hWrite, this, buff,boost::asio::placeholders::error));
-            }
-            m_WriteQueueMutex.unlock();
+            Buffer_ptr buff = m_WriteQueue.front();
+            m_Socket.async_send(buffer(buff->Data(), buff->Length()),
+              boost::bind(&SocketSession::hWrite, this, buff,boost::asio::placeholders::error));
         } else {
             m_isWriting = false;
         }
-        m_isWritingMutex.unlock();
     } else {
-        m_WriteQueueMutex.lock();
         m_WriteQueue = queue<Buffer_ptr>();
-        m_WriteQueueMutex.unlock();
         Stop();
     }
+
+    m_WriteQueueMutex.unlock();
+    m_isWritingMutex.unlock();
 }
 
 void SocketSession::Stop() {
@@ -151,9 +149,8 @@ void SocketSession::Stop() {
     }
     boost::system::error_code ec;
     m_Connected = false;
-    //m_Socket.cancel(ec);
     m_Socket.close(ec);
-    m_codPacketProcess.notify_one();
+    m_codPacketProcess.notify_all();
     m_PacketProcessThread.join();
     m_Server->ReleaseClient(shared_from_this());
 }

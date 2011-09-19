@@ -53,7 +53,6 @@ protected:
     std::queue<Buffer_ptr> m_WriteQueue;
     std::queue<Buffer_ptr> m_ReadQueue;
     bool m_isWriting;
-    bool m_isProcessing;
     boost::thread m_PacketProcessThread;
     boost::condition_variable m_codPacketProcess;
     boost::mutex m_isProcessingMutex;
