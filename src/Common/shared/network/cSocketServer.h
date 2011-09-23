@@ -21,7 +21,7 @@ namespace common {
 namespace shared {
 namespace network {
 
-typedef boost::function<bool (SocketSession_ptr)> SocketServerCallBack;
+typedef boost::function<bool(SocketSession_ptr)> SocketServerCallBack;
 
 class SocketServer {
 public:
