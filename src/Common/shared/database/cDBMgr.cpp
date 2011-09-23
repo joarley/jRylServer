@@ -1,9 +1,9 @@
 #include "cDBMgr.h"
 
-#include "boost/thread/condition_variable.hpp"
-#include "boost/thread/mutex.hpp"
-#include "boost/thread/thread.hpp"
-#include "boost/bind.hpp"
+#include <boost/thread/condition_variable.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
+#include <boost/bind.hpp>
 
 #include "shared/database/iDBAdaptor.h"
 #include "shared/database/iDBConnection.h"

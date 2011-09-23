@@ -47,10 +47,12 @@ public:
 
     size_t GetLenght();
     FieldType GetType();
+	char* GetName();
 
     void SetValue(byte* value);
     void SetValueLength(size_t valueLength);
     void SetType(FieldType type);
+	void SetName(char* name);
 
     DBField() {
     }
@@ -62,6 +64,7 @@ private:
     byte* m_value;
     size_t m_valueLength;
     FieldType m_type;
+	char* m_name;
 };
 
 }//namespace database

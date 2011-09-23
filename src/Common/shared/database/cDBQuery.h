@@ -9,14 +9,30 @@ namespace common {
 namespace shared {
 namespace database {
 
-class QueryParam {
+class Param {
 public:
-    QueryParam() {
+	enum ParamType {
+        FT_STRING,
+        FT_FLOAT64,
+        FT_FLOAT32,
+        FT_INT64,
+        FT_INT32,
+        FT_INT16,
+        FT_INT8,
+        FT_UINT64,
+        FT_UINT32,
+        FT_UINT16,
+        FT_UINT8,
+        FT_BOOL,
+        FT_BYTE
+    };
+
+    Param() {
         m_name = NULL;
         m_value = NULL;
     }
 
-    ~QueryParam() {
+    ~Param() {
         if(m_name != NULL) {
             delete[] m_name;
         }
@@ -26,14 +42,26 @@ public:
         }
     }
 
-    char* GetName() {};
-    void SetName(char* name) {};
-    void SetValue(void* value) {};
-    void* GetValue() {};
+    char* GetName() {
+		return m_name;
+	}
+	
+	void* GetValue() {
+		return m_value;
+	}
+	
+	void SetName(char* name) {
+		
+	}
+
+    void SetValue(void* value) {
+	
+	}
+    
 private:
     char* m_name;
     void* m_value;
-}
+};
 
 class DBQuery {
 public:
@@ -41,10 +69,10 @@ public:
     DBQuery();
     char* GetText();
     void SetText(const char* text);
-    *std::vector<QueryParam*> Params();
-    QueryParam* GetParamByName(char* name);
+    std::vector<Param*> Params();
+    Param* GetParamByName(char* name);
 private:
-    std::vector<QueryParam*> m_params;
+    std::vector<Param*> m_params;
     char *m_text;
 };
 

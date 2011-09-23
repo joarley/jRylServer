@@ -10,81 +10,31 @@ ConfLoad::ConfLoad() {
     m_dic = NULL;
 }
 
-bool ConfLoad::LoadConfig(std::string file) {
-    m_dic = iniparser_load((char *) file.c_str());
+bool ConfLoad::LoadConfig(const char* file) {
+    m_dic = iniparser_load((char*)file);
     if (m_dic == NULL) {
         return false;
     }
     return true;
 }
 
-bool ConfLoad::GetBool(std::string section, std::string key) {
-    if (m_dic == NULL || !iniparser_getboolean(m_dic, (char*) (section + ":" + key).c_str(), 0)) {
+bool ConfLoad::GetBool(const char* section, const char* key) {
+	char seckey[1024];
+	sprintf(seckey, "%s:%s", section, key);
+	if (m_dic == NULL || !iniparser_getboolean(m_dic, seckey, 0)) {
         return false;
     } else {
         return true;
     }
 }
 
-string ConfLoad::GetString(std::string section, std::string key) {
-    string stret;
+char* ConfLoad::GetString(const char* section, const char* key) {
     if (m_dic == NULL) {
-        return stret;
+        return NULL;
     }
-    char* st = iniparser_getstring(m_dic, (char*) (section + ":" + key).c_str(), NULL);
-    if (st == NULL) {
-        return 0;
-    }
-    stret = st;
-    return stret;
-}
-
-int64 ConfLoad::GetInt64(std::string section, std::string key) {
-    if (m_dic == NULL) {
-        return 0;
-    }
-    char* st = iniparser_getstring(m_dic, (char*) (section + ":" + key).c_str(), NULL);
-    if (st == NULL) {
-        return 0;
-    }
-    int64 value = j_atoi<int64>(st);
-    return value;
-}
-
-int32 ConfLoad::GetInt32(std::string section, std::string key) {
-    if (m_dic == NULL) {
-        return 0;
-    }
-    char* st = iniparser_getstring(m_dic, (char*) (section + ":" + key).c_str(), NULL);
-    if (st == NULL) {
-        return 0;
-    }
-    int32 value = j_atoi<int32>(st);
-    return value;
-}
-
-int16 ConfLoad::GetInt16(std::string section, std::string key) {
-    if (m_dic == NULL) {
-        return 0;
-    }
-    char* st = iniparser_getstring(m_dic, (char*) (section + ":" + key).c_str(), NULL);
-    if (st == NULL) {
-        return 0;
-    }
-    int16 value = j_atoi<int16>(st);
-    return value;
-}
-
-int8 ConfLoad::GetInt8(std::string section, std::string key) {
-    if (m_dic == NULL) {
-        return 0;
-    }
-    char* st = iniparser_getstring(m_dic, (char*) (section + ":" + key).c_str(), NULL);
-    if (st == NULL) {
-        return 0;
-    }
-    int8 value = j_atoi<int8>(st);
-    return value;
+	char seckey[1024];
+	sprintf(seckey, "%s:%s", section, key);
+	return iniparser_getstring(m_dic, seckey, NULL);
 }
 
 ConfLoad::~ConfLoad() {
