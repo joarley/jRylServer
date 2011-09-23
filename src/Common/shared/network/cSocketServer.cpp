@@ -34,26 +34,26 @@ bool SocketServer::Bind(string listenAdress, string listenPort) {
     tcp::resolver::query qry(boost::asio::ip::tcp::v4(), listenAdress, listenPort);
     tcp::resolver::iterator iteBegin = res.resolve(qry, ec);
     if (ec) {
-        Logger::GetInstance().ShowError(ec.message());
+        Logger::GetInstance().ShowError(ec.message().c_str());
         return false;
     }
     tcp::resolver::iterator iteEnd;
     m_Acceptor.open(iteBegin->endpoint().protocol(), ec);
     if (ec) {
-        Logger::GetInstance().ShowError(ec.message());
+        Logger::GetInstance().ShowError(ec.message().c_str());
         return false;
     }
     while (iteBegin != iteEnd) {
         m_Acceptor.bind(iteBegin->endpoint(), ec);
         if (ec) {
-            Logger::GetInstance().ShowError(ec.message());
+            Logger::GetInstance().ShowError(ec.message().c_str());
             return false;
         }
         iteBegin++;
     }
     m_Acceptor.set_option(tcp::acceptor::reuse_address(true), ec);
     if (ec) {
-        Logger::GetInstance().ShowError(ec.message());
+        Logger::GetInstance().ShowError(ec.message().c_str());
         return false;
     }
     return true;
@@ -63,7 +63,7 @@ bool SocketServer::Start() {
     boost::system::error_code error;
     m_Acceptor.listen(100, error);
     if (error) {
-        Logger::GetInstance().ShowError(error.message());
+        Logger::GetInstance().ShowError(error.message().c_str());
         return false;
     }
     SocketSession_ptr newClient(new SocketSession(m_IOService));
@@ -75,7 +75,7 @@ bool SocketServer::Start() {
 
 void SocketServer::hAccept(SocketSession_ptr newClient, const boost::system::error_code& error) {
     if (error) {
-        Logger::GetInstance().ShowError(error.message());
+        Logger::GetInstance().ShowError(error.message().c_str());
         return;
     }
     if (AcceptCallBack == NULL || AcceptCallBack(newClient)) {
