@@ -10,76 +10,263 @@ namespace common {
 namespace shared {
 
 Logger::Logger() {
-    stdout_with_ansisequence = false;
-#ifdef WIN32
-    m_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
+    m_PrintAnsiSeq = false;
+    SetDefaultLogToSTDOUT();
+}
+
+Logger::~Logger() {
+
+}
+
+void Logger::SetDefaultLogToSTDOUT() {
+    m_DefaultLogFile.reset(new LogFile);
+    m_DefaultLogFile->SetFileDescriptor(_STDOUT_);
+}
+
+bool Logger::SetDefaultLogFile(LogFile_ptr file) {
+    if (file->GetFileDescriptor() != INVALID_FILEDESCRIPTOR) {
+        m_DefaultLogFile = file;
+        return true;
+    }
+    return false;
+}
+
+Logger::LogFile_ptr Logger::CreateLogFile(const char* path, bool truncateExisting) {
+    LogFile_ptr file(new LogFile);
+
+#if defined(_WIN32) || defined(_WIN64)
+    LOGFILEDESCRIPTOR hfile = CreateFileA(path,
+      FILE_APPEND_DATA,
+      FILE_SHARE_READ,
+      NULL,
+      (truncateExisting ? CREATE_ALWAYS : OPEN_ALWAYS),
+      FILE_ATTRIBUTE_NORMAL,
+      NULL);
+
+    if (hfile == INVALID_FILEDESCRIPTOR) {
+        ShowError("Could not open/create file %s error code: %d.\n", path, GetLastError());
+    }
 #else
-    m_stdout = stdout;
+    LOGFILEDESCRIPTOR hfile = fopen(path, (truncateExisting ? "w" : "a"));
+    if (hfile == INVALID_FILEDESCRIPTOR) {
+        ShowError("Could not open/create file %s error code: %d.\n", path, errno);
+    }
 #endif
+
+    file->SetFileDescriptor(hfile);
+    return file;
 }
 
-void Logger::ClearScreen() {
-    ShowMessage(CL_CLS);
-}
-
-void Logger::ShowError(string st, ...) {
-    va_list p;
-    va_start(p, st);
-    st = CL_RED"[Error]"CL_RESET": " + st;
-    cprintf(m_stdout, st.c_str(), p);
-}
-
-void Logger::ShowInfo(string st, ...) {
-    va_list p;
-    va_start(p, st);
-    st = CL_WHITE"[Info]"CL_RESET": " + st;
-    cprintf(m_stdout, st.c_str(), p);
-    ;
-}
-
-void Logger::ShowNotice(string st, ...) {
-    va_list p;
-    va_start(p, st);
-    st = CL_WHITE"[Notice]"CL_RESET": " + st;
-    cprintf(m_stdout, st.c_str(), p);
-}
-
-void Logger::ShowWarning(string st, ...) {
-    va_list p;
-    va_start(p, st);
-    st = CL_YELLOW"[Warning]"CL_RESET": " + st;
-    cprintf(m_stdout, st.c_str(), p);
-}
-
-void Logger::ShowMessage(string st, ...) {
-    va_list p;
-    va_start(p, st);
-    cprintf(m_stdout, st.c_str(), p);
-}
-
-#ifdef WIN32
-int Logger::cprintf(HANDLE handle, const char *fmt, va_list argptr)
+void Logger::ReleaseLogFile(LogFile_ptr file) {
+    RemoveObserver(file);
+#if defined(_WIN32) || defined(_WIN64)
+    CloseHandle(file->GetFileDescriptor());
 #else
-
-int Logger::cprintf(FILE *file, const char *fmt, va_list argptr)
+    fclose(file->GetFileDescriptor());
 #endif
-{
+    file->SetFileDescriptor(INVALID_FILEDESCRIPTOR);
+}
+
+void Logger::AddObserver(LogFile_ptr file) {
+    RemoveObserver(file);
+    m_Observers.push_back(file);
+}
+
+void Logger::RemoveObserver(LogFile_ptr file) {
+    vector<LogFile_ptr>::iterator begin = m_Observers.begin();
+    vector<LogFile_ptr>::iterator end = m_Observers.end();
+    while (begin != end) {
+        if (*begin == file) {
+            m_Observers.erase(begin);
+            break;
+        }
+        begin++;
+    }
+}
+
+void Logger::ClearLogFile(LogFile_ptr file) {
+    if (is_console(file->GetFileDescriptor())) {
+        ShowMessage(file, CL_CLS);
+    }
+    
+}
+
+void Logger::ClearDefaultLogFile() {
+    ClearLogFile(m_DefaultLogFile);
+}
+
+void Logger::ShowError(const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+
+    m_DefaultLogFile->lock();
+    cprintf(m_DefaultLogFile, CL_RED"[Error]"CL_RESET": ", NULL);
+    cprintf(m_DefaultLogFile, fmt, argptr);
+    m_DefaultLogFile->unlock();
+
+    vector<LogFile_ptr>::iterator begin = m_Observers.begin();
+    vector<LogFile_ptr>::iterator end = m_Observers.end();
+    while (begin != end) {
+        (*begin)->lock();
+        cprintf(*begin, CL_RED"[Error]"CL_RESET": ", NULL);
+        cprintf(*begin, fmt, argptr);
+        (*begin)->unlock();
+        begin++;
+    }
+
+    va_end(argptr);
+}
+
+void Logger::ShowInfo(const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+    m_DefaultLogFile->lock();
+    cprintf(m_DefaultLogFile, CL_WHITE"[Info]"CL_RESET": ", NULL);
+    cprintf(m_DefaultLogFile, fmt, argptr);
+    m_DefaultLogFile->unlock();
+
+    vector<LogFile_ptr>::iterator begin = m_Observers.begin();
+    vector<LogFile_ptr>::iterator end = m_Observers.end();
+    while (begin != end) {
+        (*begin)->lock();
+        cprintf(*begin, CL_WHITE"[Info]"CL_RESET": ", NULL);
+        cprintf(*begin, fmt, argptr);
+        (*begin)->unlock();
+        begin++;
+    }
+
+    va_end(argptr);
+}
+
+void Logger::ShowNotice(const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+    m_DefaultLogFile->lock();
+    cprintf(m_DefaultLogFile, CL_WHITE"[Notice]"CL_RESET": ", NULL);
+    cprintf(m_DefaultLogFile, fmt, argptr);
+    m_DefaultLogFile->unlock();
+
+    vector<LogFile_ptr>::iterator begin = m_Observers.begin();
+    vector<LogFile_ptr>::iterator end = m_Observers.end();
+    while (begin != end) {
+        (*begin)->lock();
+        cprintf(*begin, CL_WHITE"[Notice]"CL_RESET": ", NULL);
+        cprintf(*begin, fmt, argptr);
+        (*begin)->unlock();
+        begin++;
+    }
+
+    va_end(argptr);
+}
+
+void Logger::ShowWarning(const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+    m_DefaultLogFile->lock();
+    cprintf(m_DefaultLogFile, CL_YELLOW"[Warning]"CL_RESET": ", NULL);
+    cprintf(m_DefaultLogFile, fmt, argptr);
+    m_DefaultLogFile->unlock();
+
+    vector<LogFile_ptr>::iterator begin = m_Observers.begin();
+    vector<LogFile_ptr>::iterator end = m_Observers.end();
+    while (begin != end) {
+        (*begin)->lock();
+        cprintf(*begin, CL_YELLOW"[Warning]"CL_RESET": ", NULL);
+        cprintf(*begin, fmt, argptr);
+        (*begin)->unlock();
+        begin++;
+    }
+
+    va_end(argptr);
+}
+
+void Logger::ShowMessage(const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+    m_DefaultLogFile->lock();
+    cprintf(m_DefaultLogFile, fmt, argptr);
+    m_DefaultLogFile->unlock();
+
+    vector<LogFile_ptr>::iterator begin = m_Observers.begin();
+    vector<LogFile_ptr>::iterator end = m_Observers.end();
+    while (begin != end) {
+        (*begin)->lock();
+        cprintf(*begin, fmt, argptr);
+        (*begin)->unlock();
+        begin++;
+    }
+
+    va_end(argptr);
+}
+
+void Logger::ShowError(LogFile_ptr file, const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+    file->lock();
+    cprintf(file, CL_RED"[Error]"CL_RESET": ", NULL);
+    cprintf(file, fmt, argptr);
+    file->unlock();
+    va_end(argptr);
+}
+
+void Logger::ShowInfo(LogFile_ptr file, const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+    file->lock();
+    cprintf(file, CL_WHITE"[Info]"CL_RESET": ", NULL);
+    cprintf(file, fmt, argptr);
+    file->unlock();
+    va_end(argptr);
+}
+
+void Logger::ShowNotice(LogFile_ptr file, const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+    file->lock();
+    cprintf(file, CL_WHITE"[Notice]"CL_RESET": ", NULL);
+    cprintf(file, fmt, argptr);
+    file->unlock();
+    va_end(argptr);
+}
+
+void Logger::ShowWarning(LogFile_ptr file, const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+    file->lock();
+    cprintf(file, CL_YELLOW"[Warning]"CL_RESET": ", NULL);
+    cprintf(file, fmt, argptr);
+    file->unlock();
+    va_end(argptr);
+}
+
+void Logger::ShowMessage(LogFile_ptr file, const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+    file->lock();
+    cprintf(file, fmt, argptr);
+    file->unlock();
+    va_end(argptr);
+}
+
+int Logger::cprintf(LogFile_ptr logfile, const char *fmt, va_list argptr) {
     DWORD written;
     char *p, *q;
     char tempbuf[4096]; // temporary buffer
+    LOGFILEDESCRIPTOR file = logfile->GetFileDescriptor();
 
-    if (!fmt || !*fmt)
+    if (!fmt || !*fmt || file == INVALID_FILEDESCRIPTOR) {
         return 0;
+    }
 
     // Print everything to the buffer
     vsprintf(tempbuf, fmt, argptr);
 #ifdef WIN32
-    if (!is_console(handle) && stdout_with_ansisequence) {
-        WriteFile(handle, tempbuf, (DWORD) strlen(tempbuf), &written, 0);
+    if (!is_console(file) && m_PrintAnsiSeq) {
+        WriteFile(file, tempbuf, (DWORD) strlen(tempbuf), &written, 0);
         return 0;
     }
 #else
-    if (is_console(file) || stdout_with_ansisequence) {
+    if (is_console(file) || m_PrintAnsiSeq) {
         fprintf(file, "%s", tempbuf);
         return 0;
     }
@@ -89,12 +276,12 @@ int Logger::cprintf(FILE *file, const char *fmt, va_list argptr)
     p = tempbuf;
 #ifdef WIN32
     while ((q = strchr(p, 0x1b)) != NULL) { // find the escape character
-        if (0 == WriteConsoleA(handle, p, (DWORD) (q - p), &written, 0)) // write up to the escape
-            WriteFile(handle, p, (DWORD) (q - p), &written, 0);
+        if (0 == WriteConsoleA(file, p, (DWORD) (q - p), &written, 0)) // write up to the escape
+            WriteFile(file, p, (DWORD) (q - p), &written, 0);
 
         if (q[1] != '[') { // write the escape char (whatever purpose it has)
-            if (0 == WriteConsoleA(handle, q, 1, &written, 0))
-                WriteFile(handle, q, 1, &written, 0);
+            if (0 == WriteConsoleA(file, q, 1, &written, 0))
+                WriteFile(file, q, 1, &written, 0);
             p = q + 1; //and start searching again
         } else { // from here, we will skip the '\033['
             // we break at the first unprocessible position
@@ -103,7 +290,7 @@ int Logger::cprintf(FILE *file, const char *fmt, va_list argptr)
             CONSOLE_SCREEN_BUFFER_INFO info;
 
             // initialize
-            GetConsoleScreenBufferInfo(handle, &info);
+            GetConsoleScreenBufferInfo(file, &info);
             memset(numbers, 0, sizeof (numbers));
 
             // skip escape and bracket
@@ -140,8 +327,8 @@ int Logger::cprintf(FILE *file, const char *fmt, va_list argptr)
                                   BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_BLUE;
                             }
                             //case '2': // not existing
-                            //case '3':	// blinking (not implemented)
-                            //case '4':	// unterline (not implemented)
+                            //case '3': // blinking (not implemented)
+                            //case '4': // unterline (not implemented)
                             //case '6': // not existing
                             //case '8': // concealed (not implemented)
                             //case '9': // not existing
@@ -180,7 +367,7 @@ int Logger::cprintf(FILE *file, const char *fmt, va_list argptr)
                         }
                     }
                     // set the attributes
-                    SetConsoleTextAttribute(handle, info.wAttributes);
+                    SetConsoleTextAttribute(file, info.wAttributes);
                 } else if (*q == 'J') { // \033[#J - Erase Display (ED)
                     //    \033[0J - Clears the screen from cursor to end of display. The cursor position is unchanged.
                     //    \033[1J - Clears the screen from start to cursor. The cursor position is unchanged.
@@ -193,14 +380,14 @@ int Logger::cprintf(FILE *file, const char *fmt, va_list argptr)
                         cnt = info.dwSize.X * info.dwCursorPosition.Y + info.dwCursorPosition.X + 1;
                     } else if (num == 2) { // Number of chars on screen.
                         cnt = info.dwSize.X * info.dwSize.Y;
-                        SetConsoleCursorPosition(handle, origin);
+                        SetConsoleCursorPosition(file, origin);
                     } else// 0 and default
                     { // number of chars from cursor to end
                         origin = info.dwCursorPosition;
                         cnt = info.dwSize.X * (info.dwSize.Y - info.dwCursorPosition.Y) - info.dwCursorPosition.X;
                     }
-                    FillConsoleOutputAttribute(handle, info.wAttributes, cnt, origin, &tmp);
-                    FillConsoleOutputCharacter(handle, ' ', cnt, origin, &tmp);
+                    FillConsoleOutputAttribute(file, info.wAttributes, cnt, origin, &tmp);
+                    FillConsoleOutputCharacter(file, ' ', cnt, origin, &tmp);
                 } else if (*q == 'K') { // \033[K  : clear line from actual position to end of the line
                     //    \033[0K - Clears all characters from the cursor position to the end of the line.
                     //    \033[1K - Clears all characters from start of line to the cursor position.
@@ -219,8 +406,8 @@ int Logger::cprintf(FILE *file, const char *fmt, va_list argptr)
                         origin = info.dwCursorPosition;
                         cnt = info.dwSize.X - info.dwCursorPosition.X; // how many spaces until line is full
                     }
-                    FillConsoleOutputAttribute(handle, info.wAttributes, cnt, origin, &tmp);
-                    FillConsoleOutputCharacter(handle, ' ', cnt, origin, &tmp);
+                    FillConsoleOutputAttribute(file, info.wAttributes, cnt, origin, &tmp);
+                    FillConsoleOutputCharacter(file, ' ', cnt, origin, &tmp);
                 } else if (*q == 'H' || *q == 'f') { // \033[#;#H - Cursor Position (CUP)
                     // \033[#;#f - Horizontal & Vertical Position
                     // The first # specifies the line number, the second # specifies the column.
@@ -230,7 +417,7 @@ int Logger::cprintf(FILE *file, const char *fmt, va_list argptr)
 
                     if (info.dwCursorPosition.X >= info.dwSize.X) info.dwCursorPosition.Y = info.dwSize.X - 1;
                     if (info.dwCursorPosition.Y >= info.dwSize.Y) info.dwCursorPosition.Y = info.dwSize.Y - 1;
-                    SetConsoleCursorPosition(handle, info.dwCursorPosition);
+                    SetConsoleCursorPosition(file, info.dwCursorPosition);
                 } else if (*q == 's') { // \033[s - Save Cursor Position (SCP)
                     /* XXX Two streams are being used. Disabled to avoid inconsistency [flaviojs]
                     CONSOLE_SCREEN_BUFFER_INFO info;
@@ -247,28 +434,28 @@ int Logger::cprintf(FILE *file, const char *fmt, va_list argptr)
 
                     if (info.dwCursorPosition.Y < 0)
                         info.dwCursorPosition.Y = 0;
-                    SetConsoleCursorPosition(handle, info.dwCursorPosition);
+                    SetConsoleCursorPosition(file, info.dwCursorPosition);
                 } else if (*q == 'B') { // \033[#B - Cursor Down (CUD)
                     // Moves the cursor DOWN # number of lines
                     info.dwCursorPosition.Y += (numbers[numpoint]) ? (numbers[numpoint] >> 4)*10 + (numbers[numpoint]&0x0F) : 1;
 
                     if (info.dwCursorPosition.Y >= info.dwSize.Y)
                         info.dwCursorPosition.Y = info.dwSize.Y - 1;
-                    SetConsoleCursorPosition(handle, info.dwCursorPosition);
+                    SetConsoleCursorPosition(file, info.dwCursorPosition);
                 } else if (*q == 'C') { // \033[#C - Cursor Forward (CUF)
                     // Moves the cursor RIGHT # number of columns
                     info.dwCursorPosition.X += (numbers[numpoint]) ? (numbers[numpoint] >> 4)*10 + (numbers[numpoint]&0x0F) : 1;
 
                     if (info.dwCursorPosition.X >= info.dwSize.X)
                         info.dwCursorPosition.X = info.dwSize.X - 1;
-                    SetConsoleCursorPosition(handle, info.dwCursorPosition);
+                    SetConsoleCursorPosition(file, info.dwCursorPosition);
                 } else if (*q == 'D') { // \033[#D - Cursor Backward (CUB)
                     // Moves the cursor LEFT # number of columns
                     info.dwCursorPosition.X -= (numbers[numpoint]) ? (numbers[numpoint] >> 4)*10 + (numbers[numpoint]&0x0F) : 1;
 
                     if (info.dwCursorPosition.X < 0)
                         info.dwCursorPosition.X = 0;
-                    SetConsoleCursorPosition(handle, info.dwCursorPosition);
+                    SetConsoleCursorPosition(file, info.dwCursorPosition);
                 } else if (*q == 'E') { // \033[#E - Cursor Next Line (CNL)
                     // Moves the cursor down the indicated # of rows, to column 1
                     info.dwCursorPosition.Y += (numbers[numpoint]) ? (numbers[numpoint] >> 4)*10 + (numbers[numpoint]&0x0F) : 1;
@@ -276,7 +463,7 @@ int Logger::cprintf(FILE *file, const char *fmt, va_list argptr)
 
                     if (info.dwCursorPosition.Y >= info.dwSize.Y)
                         info.dwCursorPosition.Y = info.dwSize.Y - 1;
-                    SetConsoleCursorPosition(handle, info.dwCursorPosition);
+                    SetConsoleCursorPosition(file, info.dwCursorPosition);
                 } else if (*q == 'F') { // \033[#F - Cursor Preceding Line (CPL)
                     // Moves the cursor up the indicated # of rows, to column 1.
                     info.dwCursorPosition.Y -= (numbers[numpoint]) ? (numbers[numpoint] >> 4)*10 + (numbers[numpoint]&0x0F) : 1;
@@ -284,14 +471,14 @@ int Logger::cprintf(FILE *file, const char *fmt, va_list argptr)
 
                     if (info.dwCursorPosition.Y < 0)
                         info.dwCursorPosition.Y = 0;
-                    SetConsoleCursorPosition(handle, info.dwCursorPosition);
+                    SetConsoleCursorPosition(file, info.dwCursorPosition);
                 } else if (*q == 'G') { // \033[#G - Cursor Horizontal Absolute (CHA)
                     // Moves the cursor to indicated column in current row.
                     info.dwCursorPosition.X = (numbers[numpoint]) ? (numbers[numpoint] >> 4)*10 + ((numbers[numpoint]&0x0F) - 1) : 0;
 
                     if (info.dwCursorPosition.X >= info.dwSize.X)
                         info.dwCursorPosition.X = info.dwSize.X - 1;
-                    SetConsoleCursorPosition(handle, info.dwCursorPosition);
+                    SetConsoleCursorPosition(file, info.dwCursorPosition);
                 } else if (*q == 'L' || *q == 'M' || *q == '@' || *q == 'P') { // not implemented, just skip
                 } else { // no number nor valid sequencer
                     // something is fishy, we break and give the current char free
@@ -304,8 +491,8 @@ int Logger::cprintf(FILE *file, const char *fmt, va_list argptr)
         }
     }
     if (*p) // write the rest of the buffer
-        if (0 == WriteConsoleA(handle, p, (DWORD) strlen(p), &written, 0))
-            WriteFile(handle, p, (DWORD) strlen(p), &written, 0);
+        if (0 == WriteConsoleA(file, p, (DWORD) strlen(p), &written, 0))
+            WriteFile(file, p, (DWORD) strlen(p), &written, 0);
 #else
     while ((q = strchr(p, 0x1b)) != NULL) { // find the escape character
         fprintf(file, "%.*s", (int) (q - p), p); // write up to the escape
