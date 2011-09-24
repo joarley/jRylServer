@@ -39,6 +39,7 @@ bool SocketSession::Start(SocketServer& server) {
     m_Socket.set_option(boost::asio::ip::tcp::no_delay(true));
     m_Connected = true;
     m_PacketProcessThread = boost::thread(&SocketSession::hPacketProcess, this);
+    while(!m_PacketProcessThread.joinable());
 
     Buffer_ptr buff(new Buffer());
 
@@ -51,19 +52,20 @@ bool SocketSession::Start(SocketServer& server) {
 }
 
 void SocketSession::hPacketProcess() {
-    while (m_Connected) {
+    while (m_Connected) {       
         boost::unique_lock<boost::mutex> umu(m_ProcessingMutex);
         m_codPacketProcess.wait(umu);
 
         while (!m_ReadQueue.empty() && m_Connected) {
-            m_ReadQueueMutex.lock();
             Buffer_ptr buff = m_ReadQueue.front();
-            m_ReadQueue.pop();
-            m_ReadQueueMutex.unlock();
             
             if (PacketProcessCallBack != NULL) {
                 PacketProcessCallBack(shared_from_this(), buff);
             }
+
+            m_ReadQueueMutex.lock();
+            m_ReadQueue.pop();
+            m_ReadQueueMutex.unlock();
         }
     }
     m_ReadQueueMutex.lock();
@@ -73,21 +75,19 @@ void SocketSession::hPacketProcess() {
 
 void SocketSession::hRead(Buffer_ptr buff, const boost::system::error_code& error, size_t bytes_transferred) {
     if (!error && m_Connected) {
-        m_ReadQueueMutex.lock();
-        
-        buff->SetMaxLength(bytes_transferred);
         buff->SetLength(bytes_transferred);
-            
+        
+        m_ReadQueueMutex.lock();
         m_ReadQueue.push(buff);
-                
-        buff.reset(new Buffer());
+        m_ReadQueueMutex.unlock();
 
+        buff.reset(new Buffer());
         m_Socket.async_receive(buffer(buff->Data(), buff->MaxLength()),
           boost::bind(&SocketSession::hRead, this,
           buff,
           boost::asio::placeholders::error,
           boost::asio::placeholders::bytes_transferred));
-        m_ReadQueueMutex.unlock();
+        
         m_codPacketProcess.notify_all();
     } else {
         Stop();
@@ -144,12 +144,19 @@ void SocketSession::hWrite(Buffer_ptr buff, const boost::system::error_code& err
 }
 
 void SocketSession::Stop() {
+    m_stopMutex.lock();
     if (!m_Connected) {
+        m_stopMutex.unlock();
         return;
     }
-    boost::system::error_code ec;
     m_Connected = false;
+    m_stopMutex.unlock();
+
+    boost::system::error_code ec;
+    
+    m_Socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
     m_Socket.close(ec);
+
     m_codPacketProcess.notify_all();
     m_PacketProcessThread.join();
     m_Server->ReleaseClient(shared_from_this());

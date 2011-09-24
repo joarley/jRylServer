@@ -60,6 +60,7 @@ protected:
     boost::mutex m_ReadQueueMutex;
     boost::mutex m_ProcessingMutex;
     boost::mutex m_isWritingMutex;
+    boost::mutex m_stopMutex;
 };
 
 } //namespace network

@@ -75,8 +75,12 @@ bool SocketServer::Start() {
 
 void SocketServer::hAccept(SocketSession_ptr newClient, const boost::system::error_code& error) {
     if (error) {
-        Logger::GetInstance().ShowError(error.message().c_str());
-        return;
+        if(error != boost::asio::error::operation_aborted) {
+            Logger::GetInstance().ShowError(error.message().c_str());
+        }
+        else {
+            return;
+        }
     }
     if (AcceptCallBack == NULL || AcceptCallBack(newClient)) {
         if (newClient->Start(*this)) {
