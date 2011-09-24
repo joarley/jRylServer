@@ -163,6 +163,7 @@ private:
     Logger();
     ~Logger();
     int cprintf(LogFile_ptr logfile, const char* fmt, va_list argptr);
+    int cprintf(LogFile_ptr logfile, const char* fmt, ...);
 
     LogFile_ptr m_DefaultLogFile;
     bool m_PrintAnsiSeq;

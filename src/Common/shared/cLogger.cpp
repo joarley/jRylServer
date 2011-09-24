@@ -1,9 +1,11 @@
 #include "cLogger.h"
 #include "shared/iSingleton.h"
+#include "shared/utils.h"
 
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 
 namespace jRylServer {
 namespace common {
@@ -88,7 +90,7 @@ void Logger::ClearLogFile(LogFile_ptr file) {
     if (is_console(file->GetFileDescriptor())) {
         ShowMessage(file, CL_CLS);
     }
-    
+
 }
 
 void Logger::ClearDefaultLogFile() {
@@ -98,9 +100,19 @@ void Logger::ClearDefaultLogFile() {
 void Logger::ShowError(const char* fmt, ...) {
     va_list argptr;
     va_start(argptr, fmt);
+    tm timer;
+    j_GetLocalTime(&timer);
 
     m_DefaultLogFile->lock();
-    cprintf(m_DefaultLogFile, CL_RED"[Error]"CL_RESET": ", NULL);
+    cprintf(m_DefaultLogFile,
+      CL_RED"[Error]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
+      timer.tm_mday,
+      timer.tm_mon,
+      timer.tm_year + 1900,
+      timer.tm_hour,
+      timer.tm_min,
+      timer.tm_sec);
+
     cprintf(m_DefaultLogFile, fmt, argptr);
     m_DefaultLogFile->unlock();
 
@@ -108,7 +120,15 @@ void Logger::ShowError(const char* fmt, ...) {
     vector<LogFile_ptr>::iterator end = m_Observers.end();
     while (begin != end) {
         (*begin)->lock();
-        cprintf(*begin, CL_RED"[Error]"CL_RESET": ", NULL);
+        cprintf(*begin,
+          CL_RED"[Error]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
+          timer.tm_mday,
+          timer.tm_mon,
+          timer.tm_year + 1900,
+          timer.tm_hour,
+          timer.tm_min,
+          timer.tm_sec);
+
         cprintf(*begin, fmt, argptr);
         (*begin)->unlock();
         begin++;
@@ -120,8 +140,18 @@ void Logger::ShowError(const char* fmt, ...) {
 void Logger::ShowInfo(const char* fmt, ...) {
     va_list argptr;
     va_start(argptr, fmt);
+    tm timer;
+    j_GetLocalTime(&timer);
+
     m_DefaultLogFile->lock();
-    cprintf(m_DefaultLogFile, CL_WHITE"[Info]"CL_RESET": ", NULL);
+    cprintf(m_DefaultLogFile, CL_WHITE"[Info]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
+      timer.tm_mday,
+      timer.tm_mon,
+      timer.tm_year + 1900,
+      timer.tm_hour,
+      timer.tm_min,
+      timer.tm_sec);
+
     cprintf(m_DefaultLogFile, fmt, argptr);
     m_DefaultLogFile->unlock();
 
@@ -129,7 +159,13 @@ void Logger::ShowInfo(const char* fmt, ...) {
     vector<LogFile_ptr>::iterator end = m_Observers.end();
     while (begin != end) {
         (*begin)->lock();
-        cprintf(*begin, CL_WHITE"[Info]"CL_RESET": ", NULL);
+        cprintf(*begin, CL_WHITE"[Info]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
+          timer.tm_mday,
+          timer.tm_mon,
+          timer.tm_year + 1900,
+          timer.tm_hour,
+          timer.tm_min,
+          timer.tm_sec);
         cprintf(*begin, fmt, argptr);
         (*begin)->unlock();
         begin++;
@@ -141,8 +177,17 @@ void Logger::ShowInfo(const char* fmt, ...) {
 void Logger::ShowNotice(const char* fmt, ...) {
     va_list argptr;
     va_start(argptr, fmt);
+    tm timer;
+    j_GetLocalTime(&timer);
+
     m_DefaultLogFile->lock();
-    cprintf(m_DefaultLogFile, CL_WHITE"[Notice]"CL_RESET": ", NULL);
+    cprintf(m_DefaultLogFile, CL_WHITE"[Notice]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
+      timer.tm_mday,
+      timer.tm_mon,
+      timer.tm_year + 1900,
+      timer.tm_hour,
+      timer.tm_min,
+      timer.tm_sec);
     cprintf(m_DefaultLogFile, fmt, argptr);
     m_DefaultLogFile->unlock();
 
@@ -150,7 +195,13 @@ void Logger::ShowNotice(const char* fmt, ...) {
     vector<LogFile_ptr>::iterator end = m_Observers.end();
     while (begin != end) {
         (*begin)->lock();
-        cprintf(*begin, CL_WHITE"[Notice]"CL_RESET": ", NULL);
+        cprintf(*begin, CL_WHITE"[Notice]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
+          timer.tm_mday,
+          timer.tm_mon,
+          timer.tm_year + 1900,
+          timer.tm_hour,
+          timer.tm_min,
+          timer.tm_sec);
         cprintf(*begin, fmt, argptr);
         (*begin)->unlock();
         begin++;
@@ -162,8 +213,17 @@ void Logger::ShowNotice(const char* fmt, ...) {
 void Logger::ShowWarning(const char* fmt, ...) {
     va_list argptr;
     va_start(argptr, fmt);
+    tm timer;
+    j_GetLocalTime(&timer);
+
     m_DefaultLogFile->lock();
-    cprintf(m_DefaultLogFile, CL_YELLOW"[Warning]"CL_RESET": ", NULL);
+    cprintf(m_DefaultLogFile, CL_YELLOW"[Warning]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
+      timer.tm_mday,
+      timer.tm_mon,
+      timer.tm_year + 1900,
+      timer.tm_hour,
+      timer.tm_min,
+      timer.tm_sec);
     cprintf(m_DefaultLogFile, fmt, argptr);
     m_DefaultLogFile->unlock();
 
@@ -171,7 +231,13 @@ void Logger::ShowWarning(const char* fmt, ...) {
     vector<LogFile_ptr>::iterator end = m_Observers.end();
     while (begin != end) {
         (*begin)->lock();
-        cprintf(*begin, CL_YELLOW"[Warning]"CL_RESET": ", NULL);
+        cprintf(*begin, CL_YELLOW"[Warning]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
+          timer.tm_mday,
+          timer.tm_mon,
+          timer.tm_year + 1900,
+          timer.tm_hour,
+          timer.tm_min,
+          timer.tm_sec);
         cprintf(*begin, fmt, argptr);
         (*begin)->unlock();
         begin++;
@@ -183,6 +249,9 @@ void Logger::ShowWarning(const char* fmt, ...) {
 void Logger::ShowMessage(const char* fmt, ...) {
     va_list argptr;
     va_start(argptr, fmt);
+    tm timer;
+    j_GetLocalTime(&timer);
+
     m_DefaultLogFile->lock();
     cprintf(m_DefaultLogFile, fmt, argptr);
     m_DefaultLogFile->unlock();
@@ -202,8 +271,17 @@ void Logger::ShowMessage(const char* fmt, ...) {
 void Logger::ShowError(LogFile_ptr file, const char* fmt, ...) {
     va_list argptr;
     va_start(argptr, fmt);
+    tm timer;
+    j_GetLocalTime(&timer);
+
     file->lock();
-    cprintf(file, CL_RED"[Error]"CL_RESET": ", NULL);
+    cprintf(file, CL_RED"[Error]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
+      timer.tm_mday,
+      timer.tm_mon,
+      timer.tm_year + 1900,
+      timer.tm_hour,
+      timer.tm_min,
+      timer.tm_sec);
     cprintf(file, fmt, argptr);
     file->unlock();
     va_end(argptr);
@@ -212,8 +290,17 @@ void Logger::ShowError(LogFile_ptr file, const char* fmt, ...) {
 void Logger::ShowInfo(LogFile_ptr file, const char* fmt, ...) {
     va_list argptr;
     va_start(argptr, fmt);
+    tm timer;
+    j_GetLocalTime(&timer);
+
     file->lock();
-    cprintf(file, CL_WHITE"[Info]"CL_RESET": ", NULL);
+    cprintf(file, CL_WHITE"[Info]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
+      timer.tm_mday,
+      timer.tm_mon,
+      timer.tm_year + 1900,
+      timer.tm_hour,
+      timer.tm_min,
+      timer.tm_sec);
     cprintf(file, fmt, argptr);
     file->unlock();
     va_end(argptr);
@@ -222,8 +309,17 @@ void Logger::ShowInfo(LogFile_ptr file, const char* fmt, ...) {
 void Logger::ShowNotice(LogFile_ptr file, const char* fmt, ...) {
     va_list argptr;
     va_start(argptr, fmt);
+    tm timer;
+    j_GetLocalTime(&timer);
+
     file->lock();
-    cprintf(file, CL_WHITE"[Notice]"CL_RESET": ", NULL);
+    cprintf(file, CL_WHITE"[Notice]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
+      timer.tm_mday,
+      timer.tm_mon,
+      timer.tm_year + 1900,
+      timer.tm_hour,
+      timer.tm_min,
+      timer.tm_sec);
     cprintf(file, fmt, argptr);
     file->unlock();
     va_end(argptr);
@@ -232,8 +328,17 @@ void Logger::ShowNotice(LogFile_ptr file, const char* fmt, ...) {
 void Logger::ShowWarning(LogFile_ptr file, const char* fmt, ...) {
     va_list argptr;
     va_start(argptr, fmt);
+    tm timer;
+    j_GetLocalTime(&timer);
+
     file->lock();
-    cprintf(file, CL_YELLOW"[Warning]"CL_RESET": ", NULL);
+    cprintf(file, CL_YELLOW"[Warning]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
+      timer.tm_mday,
+      timer.tm_mon,
+      timer.tm_year + 1900,
+      timer.tm_hour,
+      timer.tm_min,
+      timer.tm_sec);
     cprintf(file, fmt, argptr);
     file->unlock();
     va_end(argptr);
@@ -246,6 +351,14 @@ void Logger::ShowMessage(LogFile_ptr file, const char* fmt, ...) {
     cprintf(file, fmt, argptr);
     file->unlock();
     va_end(argptr);
+}
+
+int Logger::cprintf(LogFile_ptr logfile, const char* fmt, ...) {
+    va_list argptr;
+    va_start(argptr, fmt);
+    int ret = cprintf(logfile, fmt, argptr);
+    va_end(argptr);
+    return ret;
 }
 
 int Logger::cprintf(LogFile_ptr logfile, const char *fmt, va_list argptr) {

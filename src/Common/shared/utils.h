@@ -1,10 +1,12 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
+#include "shared/typedef.h"
+
 #include <ctype.h>
 #include <cstring>
+#include <ctime>
 
-#include "shared/typedef.h"
 
 namespace jRylServer {
 namespace common {
@@ -114,6 +116,8 @@ template<class T> char* j_ftoa(T in) {
 template<class T> T j_atof(const char *nptr) {
     return T(atof(nptr));
 }
+
+void j_GetLocalTime(tm* tmResult);
 
 } //namespace shared
 } //namespace common

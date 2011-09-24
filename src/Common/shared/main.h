@@ -12,7 +12,7 @@ using namespace jRylServer;
 using namespace jRylServer::common::shared;
 
 int main(int argc, char *argv[]) {
-    Logger::GetInstance().ClearScreen();
+    Logger::GetInstance().ClearDefaultLogFile();
     Logger::GetInstance().ShowMessage(Splash, MODULE_NAME, 0);
 
     std::vector<std::string> params;
