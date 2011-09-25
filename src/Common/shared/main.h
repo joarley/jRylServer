@@ -14,41 +14,87 @@
 using namespace jRylServer;
 using namespace jRylServer::common::shared;
 
-int main(int argc, char *argv[]) {
-    Logger::GetInstance().ClearDefaultLogFile();
-    Logger::GetInstance().ShowMessage(Splash, MODULE_NAME, 0);
-    
-    time::TimeMgr::GetInstance().Start();
-    network::SocketMgr::GetInstance().Start();
+#if defined(_WIN32) || defined(_WIN64) 
+#include <Windows.h>
+#ifdef _DEBUG
+#include <vld.h>
+#endif
+BOOL sighandler(DWORD fdwCtrlType);
+#else
+#include <signal.h>
+void sighandler(int signum, siginfo_t *info, void *ptr);
+#endif
 
-    
+bool StartSignalCtrl();
+
+StartupClass* Main;
 
 #ifdef STARTUP_CLASS
-    //BOOST_STATIC_ASSERT_MSG((boost::is_base_of<iStartupClass, STARTUP_CLASS>::value), "STARTUP_CLASS is not a StartupClass");
-    
+
+int main(int argc, char *argv[]) {
+
+    Logger::GetInstance().ClearDefaultLogFile();
+    Logger::GetInstance().ShowMessage(Splash, MODULE_NAME, 0);
+
     std::vector<std::string> params;
     for (int i = 0; i < argc; i++) {
         params.push_back(argv[i]);
     }
-    STARTUP_CLASS Main(params);
-    if (!Main.LoadConfig()) {
+    Main = new STARTUP_CLASS(params);
+    if (!Main->LoadConfig()) {
         return -1;
     }
-    int startRet = Main.Start();
+
+    if(!StartSignalCtrl()) {
+        return -1;
+    }
+
+    time::TimeMgr::GetInstance().Start();
+    network::SocketMgr::GetInstance().Start();
+
+    int startRet = Main->Start();
+    delete Main;
 
     time::TimeMgr::GetInstance().Stop();
     network::SocketMgr::GetInstance().Stop();
-    
+
     Logger::GetInstance().ShowMessage(CL_RESET);
+    
     Logger::DestroyInstance();
+    time::TimeMgr::DestroyInstance();
     crypt::CryptEngine::DestroyInstance();
     network::SocketMgr::DestroyInstance();
     
     return startRet;
+}
 #else
 #error STARTUP_CLASS not defined
 #endif
+
+#if defined(_WIN32) || defined(_WIN64)
+
+bool StartSignalCtrl() {
+    if (!SetConsoleCtrlHandler((PHANDLER_ROUTINE) sighandler, TRUE)) {
+        Logger::GetInstance().ShowError("Unable to add action to process signal control.\n");
+        return false;
+    }
+    return true;
 }
 
+BOOL sighandler(DWORD fdwCtrlType) {
+    switch (fdwCtrlType) {
+        case CTRL_C_EVENT:
+        case CTRL_BREAK_EVENT:
+        case CTRL_CLOSE_EVENT://Not cancelable
+            Main->Stop();
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
+#else
+
+#endif
 
 #endif

@@ -17,9 +17,7 @@ namespace common {
 namespace shared {
 namespace time {
 
-
-
-class TimeMgr: public Singleton<TimeMgr> {
+class TimeMgr : public Singleton<TimeMgr> {
 public:
     MAKE_SINGLETON(TimeMgr);
     void Stop();
@@ -31,7 +29,7 @@ public:
     Time* CreateTime(uint32 seconds, Time::TimeCallBack callBack);
     void StopTime(const char* name);
     void StopTime(Time* time);
-    
+
     ~TimeMgr();
 private:
     TimeMgr();

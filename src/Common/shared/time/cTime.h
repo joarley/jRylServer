@@ -10,9 +10,9 @@ namespace common {
 namespace shared {
 namespace time {
 
-
 class Time {
 public:
+
     enum TimeError {
         TE_Success,
         TE_Canceled,
@@ -20,7 +20,7 @@ public:
     };
 
     typedef boost::function<void(Time::TimeError, const char*) > TimeCallBack;
-    
+
     Time(boost::asio::io_service& service);
     void SetName(const char* name);
     const char* GetName();

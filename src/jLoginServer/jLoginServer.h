@@ -16,14 +16,13 @@ using namespace std;
 namespace jRylServer {
     using namespace common::shared;
 
-    class jLoginServer : StartupClass {
+    class jLoginServer :public StartupClass {
     public:
         jLoginServer(vector<string> params);
         bool LoadConfig();
         int Start();
-        virtual ~jLoginServer();
-
-        
+        void Stop();
+        virtual ~jLoginServer();        
     protected:
         uint32 m_Id;
         network::SocketMgr *m_socketMgr;

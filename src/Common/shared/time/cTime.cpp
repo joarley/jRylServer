@@ -9,14 +9,13 @@ namespace common {
 namespace shared {
 namespace time {
 
-
-Time::Time(boost::asio::io_service& service): m_timeObject(service, boost::posix_time::seconds(0)) {
+Time::Time(boost::asio::io_service& service) : m_timeObject(service, boost::posix_time::seconds(0)) {
     *m_name = 0;
     m_timeCallBack = NULL;
 }
 
 void Time::SetName(const char* name) {
-    if(name != NULL) {
+    if (name != NULL) {
         strcpy(m_name, name);
     }
 }
@@ -30,7 +29,7 @@ void Time::SetCallBack(TimeCallBack callBack) {
 }
 
 void Time::ExecuteCallBack(TimeError error, const char* errMsg) {
-    if(m_timeCallBack != NULL) {
+    if (m_timeCallBack != NULL) {
         m_timeCallBack(error, errMsg);
     }
 }
