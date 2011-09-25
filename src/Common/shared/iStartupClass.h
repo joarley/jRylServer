@@ -7,6 +7,7 @@ namespace shared {
 class StartupClass {
     virtual bool LoadConfig() = 0;
     virtual int Start() = 0;
+    virtual bool Stop() = 0;
 };
 } //namespace shared
 } //namespace common
