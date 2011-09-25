@@ -83,4 +83,4 @@ SocketServer* SocketMgr::GetServer(string name) {
 } //namespace network
 } //namespace common
 } //namespace shared
-} //namespace jRylServer=
+} //namespace jRylServer
