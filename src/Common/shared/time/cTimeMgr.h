@@ -21,7 +21,7 @@ class TimeMgr : public Singleton<TimeMgr> {
 public:
     MAKE_SINGLETON(TimeMgr);
     void Stop();
-    void Start();
+    bool Start();
 
     Time* CreateTime(const char* name, uint32 seconds, Time::TimeCallBack callBack);
     Time* CreateTime(const char* name, uint32 seconds);

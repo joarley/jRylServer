@@ -11,6 +11,7 @@
 #include "shared/time/cTimeMgr.h"
 #include "shared/network/cSocketMgr.h"
 #include "shared/database/cDBMgr.h"
+#include "shared/crypt/cCryptEngine.h"
 
 using namespace jRylServer;
 using namespace jRylServer::common::shared;
@@ -38,26 +39,44 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    Logger::GetInstance().ClearDefaultLogFile();
+    Logger::GetInstance().ShowMessage(Splash, MODULE_NAME, 0);
+
+    Logger::GetInstance().ShowInfo("[main] Creating module\n");
     std::vector<std::string> params;
     for (int i = 0; i < argc; i++) {
         params.push_back(argv[i]);
     }
-    
     Main = new STARTUP_CLASS(params);
+
+    Logger::GetInstance().ShowInfo("[main] Starting module configuration\n");
     if (!Main->LoadConfig()) {
         return -1;
     }
 
-    Logger::GetInstance().ClearDefaultLogFile();
-    Logger::GetInstance().ShowMessage(Splash, MODULE_NAME, 0);
+    
 
-    time::TimeMgr::GetInstance().Start();
-    network::SocketMgr::GetInstance().Start();
-    database::DBMgr::GetInstance().Start();
+    if(!time::TimeMgr::GetInstance().Start()) {
+        Logger::GetInstance().ShowError("[main] Error starting TimeMgr\n");
+        return -1;
+    }
+    if(!network::SocketMgr::GetInstance().Start()) {
+        Logger::GetInstance().ShowError("[main] Error starting SocketMgr\n");
+        return -1;
+    }
+    if(!database::DBMgr::GetInstance().Start()) {
+        Logger::GetInstance().ShowError("[main] Error starting DBMgr\n");
+        return -1;
+    }
+    if(!crypt::CryptEngine::GetInstance().Start()) {
+        Logger::GetInstance().ShowError("[main] Error starting CryptEngine\n");
+        return -1;
+    }
 
     int startRet = Main->Start();
     delete Main;
 
+    crypt::CryptEngine::GetInstance().Stop();
     database::DBMgr::GetInstance().Stop();
     time::TimeMgr::GetInstance().Stop();
     network::SocketMgr::GetInstance().Stop();

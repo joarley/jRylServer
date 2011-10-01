@@ -8,6 +8,7 @@
 #include "shared/cCrc32.h"
 #include "shared/utils.h"
 #include "shared/iSingleton.h"
+#include "shared/cLogger.h"
 
 namespace jRylServer {
 namespace common {
@@ -18,39 +19,56 @@ static uint32 s_ClientKeyId = 0x56;
 static uint32 s_ServerKeyId = 0x3D;
 
 CryptEngine::CryptEngine() {
-    unsigned char GGRylKey[] = {0xC6, 0xD0, 0xC5, 0xB6, 0xB0, 0xD4, 0xC0, 0xD3, 0xB0, 0xA1, 0xB5, 0xE5, 0x00};
-    byte GGClientSeedKey[16] = {0xA3, 0xFE, 0x91, 0x8F, 0xEB, 0xE1, 0xDC, 0x5C, 0x41, 0xE0, 0x20, 0x40, 0xAE, 0xA6, 0xAB, 0xA7};
-    byte GGServerSeedKey[16] = {0x1B, 0xC2, 0x0A, 0xCA, 0x43, 0xDC, 0x7D, 0x2F, 0xB3, 0xA9, 0xD0, 0x36, 0x4D, 0x98, 0x6A, 0xEE};
+    m_GGKey = NULL;
+}
 
-    for (int i = 0; GGRylKey[i]; i++) {
-        GGClientSeedKey[i % 16] ^= GGRylKey[i];
-        GGServerSeedKey[i % 16] ^= GGRylKey[i];
+bool CryptEngine::Start() {
+    if(m_GGKey == NULL) {
+        Logger::GetInstance().ShowError("[CryptEngine] GGKey not defined.\n");
+        return false;
+    }
+    for (int i = 0; m_GGKey[i]; i++) {
+        m_GGClientSeedKey[i % 16] ^= m_GGKey[i];
+        m_GGServerSeedKey[i % 16] ^= m_GGKey[i];
     }
 
-    SeedCipher::EncRoundKey(m_GGClientSeedParam, GGClientSeedKey);
-    SeedCipher::EncRoundKey(m_GGServerSeedParam, GGServerSeedKey);
+    SeedCipher::EncRoundKey(m_GGClientSeedParam, m_GGClientSeedKey);
+    SeedCipher::EncRoundKey(m_GGServerSeedParam, m_GGServerSeedKey);
+
+    return true;
+}
+
+void CryptEngine::Stop() {
+    delete[] m_GGKey;
+}
+
+void CryptEngine::SetGGCryptParams(byte* GGClientSeedKey, byte* GGServerSeedKey, byte* GGKey) {
+    memcpy(m_GGClientSeedKey, GGClientSeedKey, sizeof(m_GGClientSeedKey));
+    memcpy(m_GGServerSeedKey, GGServerSeedKey, sizeof(m_GGServerSeedKey));
+    m_GGKey = (byte*) malloc(strlen((char*)GGKey) + 1);
+    strcpy((char*)m_GGKey, (char*)GGKey);
 }
 
 void CryptEngine::XorCrypt(Buffer_ptr buffer, Cryptkey& key) {
-    CryptPacketBody(buffer->Data(), buffer->Length(), key);
-    CryptPacketHeader(buffer->Data());
+    XorCryptPacketBody(buffer->Data(), buffer->Length(), key);
+    XorCryptPacketHeader(buffer->Data());
 }
 
 void CryptEngine::XorDecrypt(Buffer_ptr buffer) {
-    DecryptPacketHeader(buffer->Data());
+    XorDecryptPacketHeader(buffer->Data());
     Cryptkey key;
     buffer->GetPack(key, 4);
-    DecryptPacketBody(buffer->Data(), buffer->Length(), key);
+    XorDecryptPacketBody(buffer->Data(), buffer->Length(), key);
 }
 
-void CryptEngine::CryptPacketHeader(LPBYTE bytes) {
+void CryptEngine::XorCryptPacketHeader(LPBYTE bytes) {
     for (int i = 1; i < PACKET_HEADER_SIZE; i++) {
         bytes[i] = bytes[i] ^ BitFields[i - 1];
         bytes[i] = (bytes[i] << 1) | (bytes[i] >> 7);
     }
 }
 
-void CryptEngine::CryptPacketBody(LPBYTE bytes, size_t size, Cryptkey& key) {
+void CryptEngine::XorCryptPacketBody(LPBYTE bytes, size_t size, Cryptkey& key) {
     int pos1 = (key.CodePage * 10 + key.Key1) * 40;
     int pos2 = (key.CodePage * 10 + key.Key2) * 40;
     for (uint i = PACKET_HEADER_SIZE, j = 0; i < size; i++, j++) {
@@ -58,14 +76,14 @@ void CryptEngine::CryptPacketBody(LPBYTE bytes, size_t size, Cryptkey& key) {
     }
 }
 
-void CryptEngine::DecryptPacketHeader(LPBYTE bytes) {
+void CryptEngine::XorDecryptPacketHeader(LPBYTE bytes) {
     for (int i = 1; i < PACKET_HEADER_SIZE; i++) {
         bytes[i] = (char) (bytes[i] >> 1) | (char) (bytes[i] << 7);
         bytes[i] = bytes[i] ^ BitFields[i - 1];
     }
 }
 
-void CryptEngine::DecryptPacketBody(LPBYTE bytes, size_t size, Cryptkey& key) {
+void CryptEngine::XorDecryptPacketBody(LPBYTE bytes, size_t size, Cryptkey& key) {
     int pos1 = (key.CodePage * 10 + key.Key1) * 40;
     int pos2 = (key.CodePage * 10 + key.Key2) * 40;
     for (uint i = PACKET_HEADER_SIZE, j = 0; i < size; i++, j++) {

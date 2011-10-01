@@ -37,6 +37,14 @@ char* ConfLoad::GetString(const char* section, const char* key) {
 	return iniparser_getstring(m_dic, seckey, NULL);
 }
 
+ int ConfLoad::GetBytes(byte* ret, const char* section, const char* key) {
+    if (m_dic == NULL) {
+        return NULL;
+    }
+
+    return j_parseHexSeq(GetString(section, key), ret);
+ }
+
 ConfLoad::~ConfLoad() {
     if (m_dic) {
         iniparser_freedict(m_dic);

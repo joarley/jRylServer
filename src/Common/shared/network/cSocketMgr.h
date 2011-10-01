@@ -20,7 +20,7 @@ namespace network {
 class SocketMgr:public  Singleton<SocketMgr> {
     MAKE_SINGLETON(SocketMgr);
 public:
-    void Start();
+    bool Start();
     void Stop();
     SocketServer* CreateServer(string name);
     SocketServer* GetServer(string name);

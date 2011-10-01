@@ -25,9 +25,6 @@ namespace jRylServer {
         virtual ~jLoginServer();        
     protected:
         uint32 m_Id;
-        network::SocketMgr *m_socketMgr;
-        bool newClient(network::SocketSession_ptr client);
-        void processClient(network::SocketSession_ptr client, Buffer_ptr buff);
     };
 }
 

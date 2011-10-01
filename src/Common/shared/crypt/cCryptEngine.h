@@ -48,19 +48,32 @@ public:
         }
     } Cryptkey;
 
+    bool Start();
+    void Stop();
+
+    void SetGGCryptParams(byte* GGClientSeedKey, byte* GGServerSeedKey, byte* GGKey);
+
     Cryptkey* getKey();
     void XorCrypt(Buffer_ptr buffer, Cryptkey& key);
     void XorDecrypt(Buffer_ptr buffer);
+    
     void GGCrypt(Buffer_ptr buffer);
     GGError GGDecrypt(Buffer_ptr buffer);
+
+    void XorCryptPacketHeader(LPBYTE bytes);
+    void XorCryptPacketBody(LPBYTE bytes, size_t size, Cryptkey& key);
+    void XorDecryptPacketHeader(LPBYTE bytes);
+    void XorDecryptPacketBody(LPBYTE bytes, size_t size, Cryptkey& key);
 private:
     CryptEngine();
+
+    byte m_GGClientSeedKey[16];
+    byte m_GGServerSeedKey[16];
+    byte* m_GGKey;
     SeedCipher::SeedParam m_GGServerSeedParam;
     SeedCipher::SeedParam m_GGClientSeedParam;
-    void CryptPacketHeader(LPBYTE bytes);
-    void CryptPacketBody(LPBYTE bytes, size_t size, Cryptkey& key);
-    void DecryptPacketHeader(LPBYTE bytes);
-    void DecryptPacketBody(LPBYTE bytes, size_t size, Cryptkey& key);
+
+    
 };
 } //namespace crypt
 } //namespace shared

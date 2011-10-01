@@ -21,12 +21,13 @@ namespace shared {
 namespace network {
 
 
-void SocketMgr::Start() {
+bool SocketMgr::Start() {
     if(!m_running) {
         m_running = true;
         m_work = new boost::asio::io_service::work(m_service);
         m_runServerThread = boost::thread(boost::bind(&boost::asio::io_service::run, &m_service));
     }
+    return true;
 }
 
 void SocketMgr::Stop() {

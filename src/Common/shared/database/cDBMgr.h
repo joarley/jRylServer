@@ -51,10 +51,10 @@ public:
 	
 	DataBaseType GetDataBaseType();
 private:
-    DBMgr(): poolSize(0){};
+    DBMgr(): m_poolSize(0){};
     DataBaseType m_type;
     std::string m_connectionString;
-    int poolSize;
+    int m_poolSize;
     soci::connection_pool* m_pool;
 };
 

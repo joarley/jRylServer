@@ -27,9 +27,10 @@ TimeMgr::TimeMgr() {
 TimeMgr::~TimeMgr() {
 }
 
-void TimeMgr::Start() {
+bool TimeMgr::Start() {
     m_serviceWork = new boost::asio::io_service::work(m_service);
     m_serviceThread = boost::thread(boost::bind(&boost::asio::io_service::run, &m_service));
+    return true;
 }
 
 void TimeMgr::Stop() {

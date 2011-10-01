@@ -24,6 +24,7 @@ public:
     virtual ~ConfLoad();
     bool GetBool(const char* section, const char* key);
     char* GetString(const char* section, const char* key);
+    int GetBytes(byte* ret, const char* section, const char* key);
     template<class T> bool GetInt(const char* section, const char* key, T& et);
 	template<class T> bool GetUInt(const char* section, const char* key, T& ret);
 	template<class T> bool GetFloat(const char* section, const char* key, T& ret);
