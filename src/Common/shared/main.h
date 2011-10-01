@@ -10,6 +10,7 @@
 #include "shared/cLogger.h"
 #include "shared/time/cTimeMgr.h"
 #include "shared/network/cSocketMgr.h"
+#include "shared/database/cDBMgr.h"
 
 using namespace jRylServer;
 using namespace jRylServer::common::shared;
@@ -33,33 +34,38 @@ StartupClass* Main;
 
 int main(int argc, char *argv[]) {
 
-    Logger::GetInstance().ClearDefaultLogFile();
-    Logger::GetInstance().ShowMessage(Splash, MODULE_NAME, 0);
+    if(!StartSignalCtrl()) {
+        return -1;
+    }
 
     std::vector<std::string> params;
     for (int i = 0; i < argc; i++) {
         params.push_back(argv[i]);
     }
+    
     Main = new STARTUP_CLASS(params);
     if (!Main->LoadConfig()) {
         return -1;
     }
 
-    if(!StartSignalCtrl()) {
-        return -1;
-    }
+    Logger::GetInstance().ClearDefaultLogFile();
+    Logger::GetInstance().ShowMessage(Splash, MODULE_NAME, 0);
 
     time::TimeMgr::GetInstance().Start();
     network::SocketMgr::GetInstance().Start();
+    database::DBMgr::GetInstance().Start();
 
     int startRet = Main->Start();
     delete Main;
 
+    database::DBMgr::GetInstance().Stop();
     time::TimeMgr::GetInstance().Stop();
     network::SocketMgr::GetInstance().Stop();
 
     Logger::GetInstance().ShowMessage(CL_RESET);
     
+
+    database::DBMgr::DestroyInstance();
     Logger::DestroyInstance();
     time::TimeMgr::DestroyInstance();
     crypt::CryptEngine::DestroyInstance();

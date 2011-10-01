@@ -7,6 +7,8 @@
 #include "soci/postgresql/postgresql_soci-postgresql.h"
 #include "soci/sqlite3/sqlite3_soci-sqlite3.h"
 
+#include <string>
+
 namespace jRylServer {
 namespace common {
 namespace shared {
@@ -24,12 +26,34 @@ public:
 
     bool Start();
     void Stop();
-    void SetConnectionDetails(DataBaseType type);
-    void SetSizePool(int size);
+    void SetConnectionDetails(DataBaseType type,
+		const char* host,
+		const char* port,
+		const char* user,
+		const char* pass,
+		const char* db);
+	void SetConnectionDetails(DataBaseType type,
+		const char* file);
+    
+	void SetSizePool(int size);
+
+	soci::session* CreateSession();
+	soci::session* CreateSession(DataBaseType type,
+		const char* host,
+		const char* port,
+		const char* user,
+		const char* pass,
+		const char* db);
+	soci::session* CreateSession(DataBaseType type,
+		const char* file);
+
+	void FreeSession(soci::session* s);
+	
+	DataBaseType GetDataBaseType();
 private:
-    DBMgr(): poolSize(1){};
+    DBMgr(): poolSize(0){};
     DataBaseType m_type;
-    char m_connectionString[60];
+    std::string m_connectionString;
     int poolSize;
     soci::connection_pool* m_pool;
 };

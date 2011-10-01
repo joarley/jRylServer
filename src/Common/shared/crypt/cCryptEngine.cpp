@@ -27,8 +27,8 @@ CryptEngine::CryptEngine() {
         GGServerSeedKey[i % 16] ^= GGRylKey[i];
     }
 
-    SeedCipher::EncRoundKey(GGClientSeedParam, GGClientSeedKey);
-    SeedCipher::EncRoundKey(GGServerSeedParam, GGServerSeedKey);
+    SeedCipher::EncRoundKey(m_GGClientSeedParam, GGClientSeedKey);
+    SeedCipher::EncRoundKey(m_GGServerSeedParam, GGServerSeedKey);
 }
 
 void CryptEngine::XorCrypt(Buffer_ptr buffer, Cryptkey& key) {
@@ -104,7 +104,7 @@ CryptEngine::GGError CryptEngine::GGDecrypt(Buffer_ptr buffer) {
     size_t dataLen = buffer->Length();
     
     for (size_t i = 0; i < dataLen; i += 16) {
-        SeedCipher::Decrypt(data + i, GGClientSeedParam);
+        SeedCipher::Decrypt(data + i, m_GGClientSeedParam);
     }
     
     if(EndianChange(buffer->Get<uint32>((int)buffer->Length() - 4)) != s_ClientKeyId) {

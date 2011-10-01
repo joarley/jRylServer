@@ -55,8 +55,8 @@ public:
     GGError GGDecrypt(Buffer_ptr buffer);
 private:
     CryptEngine();
-    SeedCipher::SeedParam GGServerSeedParam;
-    SeedCipher::SeedParam GGClientSeedParam;
+    SeedCipher::SeedParam m_GGServerSeedParam;
+    SeedCipher::SeedParam m_GGClientSeedParam;
     void CryptPacketHeader(LPBYTE bytes);
     void CryptPacketBody(LPBYTE bytes, size_t size, Cryptkey& key);
     void DecryptPacketHeader(LPBYTE bytes);

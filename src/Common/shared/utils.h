@@ -118,6 +118,9 @@ template<class T> T j_atof(const char *nptr) {
 }
 
 void j_GetLocalTime(tm* tmResult);
+int j_hexStrToBytes(char* src, byte* dst);
+int j_parseHexSeq(char* src, byte* dst);
+
 
 } //namespace shared
 } //namespace common
