@@ -14,12 +14,15 @@
 #include "shared/cPacketBase.h"
 #include "shared/cLogger.h"
 #include "shared/network/cSocketServer.h"
+#include "shared/utils.h"
 
 #include <stddef.h>
 #include <queue>
+#include <string>
 
 using namespace boost::asio::ip;
 using namespace boost::asio;
+using namespace std;
 
 namespace jRylServer {
 namespace common {
@@ -48,6 +51,37 @@ bool SocketSession::Start(SocketServer& server) {
       buff,
       boost::asio::placeholders::error,
       boost::asio::placeholders::bytes_transferred));
+    return true;
+}
+
+bool SocketSession::Start() {
+    m_Server = NULL;
+    m_Socket.set_option(boost::asio::ip::tcp::no_delay(true));
+    m_Connected = true;
+    m_PacketProcessThread = boost::thread(&SocketSession::hPacketProcess, this);
+    while(!m_PacketProcessThread.joinable());
+
+    Buffer_ptr buff(new Buffer());
+
+    m_Socket.async_receive(buffer(buff->Data(), buff->MaxLength()),
+      boost::bind(&SocketSession::hRead, this,
+      buff,
+      boost::asio::placeholders::error,
+      boost::asio::placeholders::bytes_transferred));
+    return true;
+}
+
+bool SocketSession::ConnectServer(string address, string port) {
+    boost::system::error_code ec;
+    boost::asio::ip::address addr = boost::asio::ip::address::from_string(address, ec);
+    if(ec) {
+        return false;
+    }
+    boost::asio::ip::tcp::endpoint end(addr, j_atoi<uint16>(port.c_str()));
+    m_Socket.connect(end, ec);
+    if(ec) {
+        return false;
+    }
     return true;
 }
 
@@ -98,7 +132,7 @@ void SocketSession::SetPacketProcessCallBack(PacketCallBack PktProcessCallBack) 
     PacketProcessCallBack = PktProcessCallBack;
 }
 
-void SocketSession::Write(Buffer_ptr buff) {
+void SocketSession::SendPacket(Buffer_ptr buff) {
     if (!m_Connected) {
         return;
     }
@@ -162,8 +196,8 @@ void SocketSession::Stop() {
     m_Server->ReleaseClient(shared_from_this());
 }
 
-SocketServer& SocketSession::GetServer() {
-    return *m_Server;
+SocketServer* SocketSession::GetServer() {
+    return m_Server;
 }
 
 bool SocketSession::Connected() const {

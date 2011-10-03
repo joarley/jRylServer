@@ -16,9 +16,11 @@
 
 #include <stddef.h>
 #include <queue>
+#include <string>
 
 using namespace boost::asio::ip;
 using namespace boost::asio;
+using namespace std;
 
 namespace jRylServer {
 namespace common {
@@ -34,11 +36,13 @@ typedef boost::function<void (SocketSession_ptr, Buffer_ptr)> PacketCallBack;
 class SocketSession : public boost::enable_shared_from_this<SocketSession> {
 public:
     SocketSession(io_service& ioservice);
-    void Write(Buffer_ptr buffer);
+    bool ConnectServer(string address, string port);
+    void SendPacket(Buffer_ptr buffer);
     void Stop();
     bool Start(SocketServer& server);
+    bool Start();
     tcp::socket& Socket();
-    SocketServer& GetServer();
+    SocketServer* GetServer();
     void SetPacketProcessCallBack(PacketCallBack PktProcessCallBack);
     bool Connected() const;
 protected:

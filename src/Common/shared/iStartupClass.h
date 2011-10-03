@@ -9,6 +9,7 @@ public:
     virtual bool LoadConfig() = 0;
     virtual int Start() = 0;
     virtual void Stop() = 0;
+    virtual ~StartupClass() {};
 };
 } //namespace shared
 } //namespace common

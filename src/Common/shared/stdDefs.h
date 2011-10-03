@@ -8,5 +8,6 @@
 
 #define BUFFER_DEFALT_MAX_LENGTH 4096
 
+#define CHAR_SLOT_LENGTH 5
 
 #endif
