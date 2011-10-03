@@ -33,7 +33,6 @@ public:
     Nation GetNation();
     uint32 GetLastPing();
     uint32 GetFistPing();
-    bool IsLogged();
     network::SocketSession_ptr GetSocketSession();
     LoginServer* GetServer();
     bool isAuthenticated();

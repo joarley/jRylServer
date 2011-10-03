@@ -36,7 +36,7 @@ AuthAccount::AuthAccount(Buffer_ptr buff, Account* acc): PacketBase(buff) {
     uint16 flag =  m_Buffer->Get<uint16>();
 
     if(clientCheckSum != acc->GetServer()->GetChecksum() && acc->GetServer()->GetChecksum() != 0x00000001) {
-        Logger::GetInstance().ShowError("Incorrect Checksum Client[%d] Server[%d] \n", clientCheckSum, acc->GetServer()->GetChecksum());
+        Logger::GetInstance().ShowError("Incorrect Checksum Client 0x[%8X] Server 0x[%8X]\n", clientCheckSum, acc->GetServer()->GetChecksum());
         PacketServer::AuthAccount authAccount(PacketServer::AuthAccount::AE_ChecksumError);
         acc->GetSocketSession()->SendPacket(authAccount.GetProcessedBuffer());
         acc->Close();
@@ -94,7 +94,7 @@ AuthAccount::AuthAccount(Buffer_ptr buff, Account* acc): PacketBase(buff) {
         return;
     }
 
-    uint32 accountId = sqlResult.get<uint32>(string("accountid"));
+    uint32 accountId = sqlResult.get<int>(string("accountid"));
 
     if(acc->GetServer()->GetAccountById(accountId) != NULL) {
         PacketServer::AuthAccount authAccount(PacketServer::AuthAccount::AE_AlreadyLogged);

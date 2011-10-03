@@ -4,9 +4,23 @@ namespace jRylServer {
 namespace jLoginServer {
 
 Account::Account() {
-	m_Characters.resize(CHAR_SLOT_LENGTH);
-    m_gameServer = NULL;
+	m_gameServer = NULL;
     m_socketSession.reset();
+    m_id = 0;
+    m_nation = NT_NotChosen;
+    m_lastPing = 0;
+    m_fistPing = 0;
+    m_serverId = 0;
+    m_sessionId = 0;
+    m_authenticated = false;
+    m_gameServer = NULL;
+    m_server = NULL;
+    m_Characters.resize(CHAR_SLOT_LENGTH);
+    vector<Character*>::iterator begin = m_Characters.begin();
+    while(begin != m_Characters.end()) {
+        *begin = NULL;
+        begin++;
+    }
 }
 
 Account::~Account() {
@@ -27,16 +41,6 @@ uint32 Account::GetLastPing() {
 
 uint32 Account::GetFistPing() {
     return m_fistPing;
-}
-
-bool Account::IsLogged() {
-    if(m_socketSession.get() != NULL) {
-        return m_socketSession->Connected();
-    }
-    else if(m_gameServer != NULL) {
-        return m_gameServer->IsLoggedAccount(m_id);
-    }
-    return false;
 }
 
 network::SocketSession_ptr Account::GetSocketSession() {

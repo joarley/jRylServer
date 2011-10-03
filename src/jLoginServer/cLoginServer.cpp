@@ -25,7 +25,7 @@ namespace jLoginServer {
 using namespace common::shared;
 
 LoginServer::LoginServer(std::vector<std::string> params) {
-    
+    m_userCount = 0;
 }
 
 bool LoginServer::LoadConfig() {
@@ -252,10 +252,8 @@ void LoginServer::PacketProcess(network::SocketSession_ptr session, Buffer_ptr b
 bool LoginServer::ConnectClient(network::SocketSession_ptr session) {
     session->SetPacketProcessCallBack(boost::bind(&LoginServer::PacketProcess, this, _1, _2));
     Account* acc = new Account;
-    acc->SetAuthenticated(false);
-    acc->SetFistPing(0);
-    acc->SetServer(this);
     acc->SetSocketSession(session);
+    acc->SetServer(this);
     m_loginServerAccounts[session] = acc;
     return true;
 }
