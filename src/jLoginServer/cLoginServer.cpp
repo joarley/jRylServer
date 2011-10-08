@@ -56,6 +56,7 @@ bool LoginServer::LoadConfig() {
             log->ShowError("[jLoginServer] could not open file log[%s]\n", file);
             return false;
         }
+        Logger::GetInstance().AddObserver(m_logFile);
     }
 
     {//CryptEngine configure
@@ -150,10 +151,11 @@ bool LoginServer::LoadConfig() {
     }
 
     {
-         global.GetInt("Client", "Version", m_clientVersion);
-         global.GetInt("Client", "Checksum", m_clientChecksum);
-         m_patchAddress = global.GetString("Client", "PatchAddress");
-         global.GetInt("Server", "MaxUsers", m_maxUsers);
+        loginServer.GetUInt("LoginServer", "id", m_id);
+        global.GetInt("Client", "Version", m_clientVersion);
+        global.GetInt("Client", "Checksum", m_clientChecksum);
+        m_patchAddress = global.GetString("Client", "PatchAddress");
+        global.GetInt("Server", "MaxUsers", m_maxUsers);
     }
 
     return true;

@@ -6,6 +6,7 @@
 #include "soci/mysql/mysql_soci-mysql.h"
 #include "soci/postgresql/postgresql_soci-postgresql.h"
 #include "soci/sqlite3/sqlite3_soci-sqlite3.h"
+#include "shared/database/soci_custom_types.h"
 
 #include <string>
 

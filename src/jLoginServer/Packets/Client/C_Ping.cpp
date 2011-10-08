@@ -10,7 +10,6 @@
 namespace jRylServer {
 namespace jLoginServer {
 namespace PacketClient {
-
 using namespace common::shared;
 
 Ping::Ping(Buffer_ptr buff, Account* acc): PacketBase(buff) {
@@ -19,9 +18,9 @@ Ping::Ping(Buffer_ptr buff, Account* acc): PacketBase(buff) {
         acc->SetFistPing(ping);
         acc->SetLastPing(ping);
         LoginServer* server = acc->GetServer();
-        return;
+    } else {
+        acc->SetLastPing(m_Buffer->Get<uint32>());
     }
-    acc->SetLastPing(m_Buffer->Get<uint32>());
 }
 
 Ping::~Ping() {

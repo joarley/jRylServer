@@ -12,6 +12,11 @@ namespace jRylServer {
 namespace common {
 namespace shared {
 
+void j_GetLocalTime(tm* tmResult);
+int j_hexStrToBytes(char* src, byte* dst);
+int j_parseHexSeq(char* src, byte* dst);
+
+
 template<class T> inline byte GetByte(T value, int pos) {
     return (byte) (value >> (pos * 8));
 }
@@ -40,6 +45,22 @@ inline uint16 EndianChange(uint16 value) {
     return RotateR(value, 8);
 }
 
+inline uint64 EndianChange(int64 value) {
+    return (RotateR(value, 8) & 0xFF000000FF000000)
+      | (RotateR(value, 24) & 0x00FF000000FF0000)
+      | (RotateL(value, 24) & 0x0000FF000000FF00)
+      | (RotateL(value, 8) & 0x000000FF000000FF);
+}
+
+inline uint32 EndianChange(int32 value) {
+    return (RotateR(value, 8) & 0xFF00FF00)
+      | (RotateL(value, 8) & 0x00FF00FF);
+}
+
+inline uint16 EndianChange(int16 value) {
+    return RotateR(value, 8);
+}
+
 template<class T> T j_atoi(const char *nptr) {
     char *s = (char *) nptr;
     T acc = 0;
@@ -53,6 +74,16 @@ template<class T> T j_atoi(const char *nptr) {
     } else if (*s == '+')
         s++;
 
+    if(*s == '0' && (*(s + 1) == 'x' || *(s + 1) == 'X')) {
+        s += 2;
+        size_t auxsize = sizeof(T) * 2 + 1; 
+        char* aux = new char[auxsize];
+        memcpy(aux, s, auxsize - 1);
+        aux[auxsize - 1] = 0;
+        j_hexStrToBytes(aux, (byte*)&acc);
+        return EndianChange(acc);
+    }
+    
     while (isdigit((int) *s)) {
         acc = 10 * acc + ((int) *s - '0');
         s++;
@@ -69,6 +100,17 @@ template<class T> T j_atoui(const char *nptr) {
 
     while (isspace((int) *s))
         s++;
+    
+    if(*s == '0' && (*(s + 1) == 'x' || *(s + 1) == 'X')) {
+        s += 2;
+        size_t auxsize = sizeof(T) * 2 + 1; 
+        char* aux = new char[auxsize];
+        memcpy(aux, s, auxsize - 1);
+        aux[auxsize - 1] = 0;
+        j_hexStrToBytes(aux, (byte*)&acc);
+        return EndianChange(acc);
+    }
+
     while (isdigit((int) *s)) {
         acc = 10 * acc + ((int) *s - '0');
         s++;
@@ -116,12 +158,6 @@ template<class T> char* j_ftoa(T in) {
 template<class T> T j_atof(const char *nptr) {
     return T(atof(nptr));
 }
-
-void j_GetLocalTime(tm* tmResult);
-int j_hexStrToBytes(char* src, byte* dst);
-int j_parseHexSeq(char* src, byte* dst);
-
-
 } //namespace shared
 } //namespace common
 } //namespace jRylServer

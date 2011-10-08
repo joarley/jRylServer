@@ -103,7 +103,7 @@ AuthAccount::AuthAccount(Buffer_ptr buff, Account* acc): PacketBase(buff) {
     }
 
     acc->SetId(accountId);
-    acc->SetNation((Account::Nation)sqlResult.get<uint8>(string("nation")));
+    acc->SetNation((Account::Nation)sqlResult.get<int>(string("nation")));
     acc->GetServer()->LoginAccount(acc);    
 
     PacketServer::AuthAccount authAccount(acc);
