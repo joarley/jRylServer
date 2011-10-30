@@ -89,36 +89,35 @@ bool LoginServer::LoadConfig() {
             log->ShowError("[jLoginServer] key[DataBase:Type] set wrong in file [./config/global.ini]\n");
             return false;
         }
-        if(strcmp(type, "mysql") == 0 || strcmp(type, "postgre") == 0) {
+
+#if defined(DB_MYSQL_ONLY) || defined(DB_ALL_BACKEND)
+        if(strcmp(type, "mysql") == 0) {
             char* address = global.GetString("DataBase", "Address");
             char* port = global.GetString("DataBase", "Port");
             char* user = global.GetString("DataBase", "User");
             char* pass = global.GetString("DataBase", "Pass");
             char* base = global.GetString("DataBase", "Base");
-            if(address == NULL || port == NULL || user == NULL || pass == NULL || base == NULL) {
+            int poolsize;
+            global.GetInt("DataBase", "PoolSize", poolsize);
+            
+            if(address == NULL || port == NULL || user == NULL || pass == NULL || base == NULL || poolsize < 0) {
                 log->ShowError("[jLoginServer] section[DataBase] set wrong params in file [./config/global.ini]\n");
                 return false;
             }
 
-            if(strcmp(type, "mysql") == 0) {
-                database::DBMgr::GetInstance().SetConnectionDetails(database::DBMgr::DB_mysql, address, port, user, pass, base);
-            } else {
-                database::DBMgr::GetInstance().SetConnectionDetails(database::DBMgr::DB_postgresql, address, port, user, pass, base);
-            }
-        } else if(strcmp(type, "sqlite") == 0) {
-            char* file = global.GetString("DataBase", "file");
-            database::DBMgr::GetInstance().SetConnectionDetails(database::DBMgr::DB_sqlite3, file);
-        } else {
+            database::DBMgr::GetInstance().MySetParans(address, j_atoui<uint>(port), user, pass, base, poolsize);
+        }
+#endif
+#if defined(DB_SQLITE3_ONLY) || defined(DB_ALL_BACKEND)
+        if(strcmp(type, "sqlite") == 0) {
+           char* file = global.GetString("DataBase", "file");
+           database::DBMgr::GetInstance().SetConnectionDetails(database::DBMgr::DB_sqlite3, file);
+        }
+#endif
+        if(database::DBMgr::GetInstance().GetDbType() == database::DBMgr::DB_UNSELECTED) {
             log->ShowError("[jLoginServer] key[DataBase:Type] set wrong in file [./config/global.ini]\n");
             return false;
         }
-
-        int poolsize;
-        if(!global.GetInt("DataBase", "PoolSize", poolsize)) {
-            log->ShowError("[jLoginServer] key[DataBase:PoolSize] set wrong in file [./config/global.ini]\n");
-            return false;
-        }
-        database::DBMgr::GetInstance().SetSizePool(poolsize);
     }
 
     {//Network configure
