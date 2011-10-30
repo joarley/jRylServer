@@ -38,31 +38,32 @@ tcp::socket& SocketSession::Socket() {
 }
 
 bool SocketSession::Start(SocketServer& server) {
-    m_Server = &server;
-    m_Socket.set_option(boost::asio::ip::tcp::no_delay(true));
-    m_Connected = true;
     m_PacketProcessThread = boost::thread(&SocketSession::hPacketProcess, this);
     while(!m_PacketProcessThread.joinable());
 
+    m_Server = &server;
+    m_Socket.set_option(boost::asio::ip::tcp::no_delay(true));
+    m_Connected = true;
+    
     Buffer_ptr buff(new Buffer());
-
     m_Socket.async_receive(buffer(buff->Data(), buff->MaxLength()),
       boost::bind(&SocketSession::hRead, this,
       buff,
       boost::asio::placeholders::error,
       boost::asio::placeholders::bytes_transferred));
+
     return true;
 }
 
 bool SocketSession::Start() {
-    m_Server = NULL;
-    m_Socket.set_option(boost::asio::ip::tcp::no_delay(true));
-    m_Connected = true;
     m_PacketProcessThread = boost::thread(&SocketSession::hPacketProcess, this);
     while(!m_PacketProcessThread.joinable());
 
+    m_Server = NULL;
+    m_Socket.set_option(boost::asio::ip::tcp::no_delay(true));
+    m_Connected = true;
+    
     Buffer_ptr buff(new Buffer());
-
     m_Socket.async_receive(buffer(buff->Data(), buff->MaxLength()),
       boost::bind(&SocketSession::hRead, this,
       buff,

@@ -3,13 +3,13 @@
 #include "shared/cBuffer.h"
 #include "shared/cPacketBase.h"
 #include "shared/typedef.h"
-#include "shared/database/cDBMgr.h"
 #include "shared/cLogger.h"
 
 #include "../../cLoginServer.h"
 #include "../../cAccount.h"
 #include "../../cCharacter.h"
 #include "../Server/S_AuthAccount.h"
+#include "../../database.h"
 
 namespace jRylServer {
 namespace jLoginServer {
@@ -39,77 +39,56 @@ AuthAccount::AuthAccount(Buffer_ptr buff, Account* acc): PacketBase(buff) {
         Logger::GetInstance().ShowError("Incorrect Checksum Client 0x[%8X] Server 0x[%8X]\n", clientCheckSum, acc->GetServer()->GetChecksum());
         PacketServer::AuthAccount authAccount(PacketServer::AuthAccount::AE_ChecksumError);
         acc->GetSocketSession()->SendPacket(authAccount.GetProcessedBuffer());
-        acc->Close();
         return;
     }
 
     if(clientVersion != acc->GetServer()->GetVersion()) {
         PacketServer::AuthAccount authAccount(PacketServer::AuthAccount::AE_VersionError);
         acc->GetSocketSession()->SendPacket(authAccount.GetProcessedBuffer());
-        acc->Close();
         return;
     }
 
     if(acc->GetServer()->GetCurrentUsersCount() >= acc->GetServer()->GetMaxUsers() ) {
         PacketServer::AuthAccount authAccount(PacketServer::AuthAccount::AE_ServerFull);
         acc->GetSocketSession()->SendPacket(authAccount.GetProcessedBuffer());
-        acc->Close();
         return;
     }
 
-    soci::session* sql = database::DBMgr::GetInstance().CreateSession();
-    if(sql == NULL) {
-        PacketServer::AuthAccount authAccount(PacketServer::AuthAccount::AE_DBError);
-        acc->GetSocketSession()->SendPacket(authAccount.GetProcessedBuffer());
-        return;
-    }
-    
-    soci::row sqlResult;
-    try {
-        *sql << "select acc.accountid, acc.nation, ban.accountid as banid"
-                "  from account acc"
-                "          left join banned_account ban"
-                "            on acc.accountid = ban.accountid"
-                " where user = :user"
-                "   and pass = :pass",
-                soci::into(sqlResult),
-                soci::use(user, string("user")),
-                soci::use(pass, string("pass"));
-    } catch(exception e) {
-        Logger::GetInstance().ShowError("%s\n", e.what());
+    RESULT result;
+    DB_STATUS status = authenticate_account(user.c_str(), pass.c_str(), result);
+
+    if(status == DS_ERROR) {
         PacketServer::AuthAccount authAccount(PacketServer::AuthAccount::AE_DBError);
         acc->GetSocketSession()->SendPacket(authAccount.GetProcessedBuffer());
         return;
     }
 
-    if(!sql->got_data()) {
+    if(result.find("accountid") == result.end()) {
         PacketServer::AuthAccount authAccount(PacketServer::AuthAccount::AE_WrongLogin);
         acc->GetSocketSession()->SendPacket(authAccount.GetProcessedBuffer());
         return;
     }
 
-    if(sqlResult.get_indicator(string("banid")) != soci::i_null) {
-        PacketServer::AuthAccount authAccount(PacketServer::AuthAccount::AE_AccountBanned);
-        acc->GetSocketSession()->SendPacket(authAccount.GetProcessedBuffer());
-        return;
-    }
-
-    uint32 accountId = sqlResult.get<int>(string("accountid"));
-
-    if(acc->GetServer()->GetAccountById(accountId) != NULL) {
+    if(DB_CAST<uint32>(result["banid"]) != 0) {
         PacketServer::AuthAccount authAccount(PacketServer::AuthAccount::AE_AlreadyLogged);
         acc->GetSocketSession()->SendPacket(authAccount.GetProcessedBuffer());
         return;
     }
 
-    acc->SetId(accountId);
-    acc->SetNation((Account::Nation)sqlResult.get<int>(string("nation")));
-    acc->GetServer()->LoginAccount(acc);    
+    if(acc->GetServer()->GetAccountById(DB_CAST<uint32>(result["accountid"])) != NULL) {
+        PacketServer::AuthAccount authAccount(PacketServer::AuthAccount::AE_AlreadyLogged);
+        acc->GetSocketSession()->SendPacket(authAccount.GetProcessedBuffer());
+        return;
+    }
+
+    acc->SetId(DB_CAST<uint32>(result["accountid"]));
+    acc->SetNation((Account::Nation)DB_CAST<int8>(result["nation"]));
+    acc->GetServer()->LoginAccount(acc);
 
     PacketServer::AuthAccount authAccount(acc);
+    Buffer_ptr b = authAccount.GetProcessedBuffer();
+    crypt::CryptEngine::GetInstance().XorDecrypt(b);
     acc->GetSocketSession()->SendPacket(authAccount.GetProcessedBuffer());
-
-    database::DBMgr::GetInstance().FreeSession(sql);
 }
 
 AuthAccount::~AuthAccount() {

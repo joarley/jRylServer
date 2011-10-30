@@ -3,6 +3,10 @@
 
 #include "shared/typedef.h"
 
+#include <boost/type_traits/is_float.hpp>
+#include <boost/type_traits/is_integral.hpp>
+#include <boost/utility/enable_if.hpp>
+
 #include <ctype.h>
 #include <cstring>
 #include <ctime>
@@ -61,6 +65,14 @@ inline uint16 EndianChange(int16 value) {
     return RotateR(value, 8);
 }
 
+template<class T> typename boost::enable_if<boost::is_integral<T>, T>::type j_aton(const char *nptr) {
+    return j_atoi<T>(nptr);
+}
+
+template<class T> typename boost::enable_if<boost::is_float<T>, T>::type j_aton(const char *nptr) {
+    return j_atof<T>(nptr);
+}
+
 template<class T> T j_atoi(const char *nptr) {
     char *s = (char *) nptr;
     T acc = 0;
@@ -81,6 +93,7 @@ template<class T> T j_atoi(const char *nptr) {
         memcpy(aux, s, auxsize - 1);
         aux[auxsize - 1] = 0;
         j_hexStrToBytes(aux, (byte*)&acc);
+        delete[] aux;
         return EndianChange(acc);
     }
     
@@ -108,6 +121,7 @@ template<class T> T j_atoui(const char *nptr) {
         memcpy(aux, s, auxsize - 1);
         aux[auxsize - 1] = 0;
         j_hexStrToBytes(aux, (byte*)&acc);
+        delete[] aux;
         return EndianChange(acc);
     }
 
@@ -123,7 +137,14 @@ template<class T> char* j_itoa(T value, int base = 10) {
         return NULL;
     }
 
-    char* result = new char[65];
+    static int buffPos = -1;
+    static char buff[32][65];
+    buffPos++;
+    if(buffPos == 32) {
+        buffPos = 0;
+    }
+
+    char* result = buff[buffPos]; 
 
     char* ptr = result;
     char* ptr1 = result;
@@ -149,11 +170,7 @@ template<class T> char* j_itoa(T value, int base = 10) {
     return result;
 }
 
-template<class T> char* j_ftoa(T in) {
-    char* value = new char[100];
-    sprintf(value, "%f", in);
-    return value;
-}
+char* j_ftoa(double in);
 
 template<class T> T j_atof(const char *nptr) {
     return T(atof(nptr));

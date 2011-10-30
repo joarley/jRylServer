@@ -215,19 +215,19 @@ public:
     }
 
     template<class T> inline T GetString() {
-        //            BOOST_STATIC_ASSERT_MSG(false, "Type mismatch use GetString<string>() or GetString<char*>()");
+        BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
     }
 
     template<class T> inline T GetString(int offset) {
-        //            BOOST_STATIC_ASSERT_MSG(false, "Type mismatch use GetString<string>() or GetString<char*>()");
+        BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
     }
 
     template<class T> inline T GetStringSizeFixed(int size) {
-        //            BOOST_STATIC_ASSERT_MSG(false, "Type mismatch use GetString<string>() or GetString<char*>()");
+        BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
     }
 
     template<class T> inline T GetStringSizeFixed(int size, int offset) {
-        //            BOOST_STATIC_ASSERT_MSG(false, "Type mismatch use GetString<string>() or GetString<char*>()");
+        BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
     }
 
     inline LPBYTE Data() {

@@ -54,8 +54,6 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    
-
     if(!time::TimeMgr::GetInstance().Start()) {
         Logger::GetInstance().ShowError("[main] Error starting TimeMgr\n");
         return -1;

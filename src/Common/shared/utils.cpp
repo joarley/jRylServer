@@ -111,6 +111,21 @@ PARSE_SEQUENCE:
 		return j_hexStrToBytes(src , dst);
 	}
 }
+
+char* j_ftoa(double in) {
+    static int buffPos = -1;
+    static char buff[32][65];
+    buffPos++;
+    if(buffPos == 32) {
+        buffPos = 0;
+    }
+
+    char* result = buff[buffPos]; 
+
+    sprintf(result, "%f", in);
+    return result;
+}
+
 } //namespace shared
 } //namespace common
 } //namespace jRylServer

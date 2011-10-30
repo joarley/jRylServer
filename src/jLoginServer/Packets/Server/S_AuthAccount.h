@@ -16,11 +16,11 @@ public:
     enum AuthError {
         AE_ChecksumError = 3,
         AE_VersionError,
+        AE_WrongLogin,
         AE_ServerFull = 7,
         AE_AccountBanned,
         AE_AlreadyLogged = 41,
         AE_DBError = 1,
-        AE_WrongLogin = 5
     };
 
     static const uint8 PacketID = 0x01;

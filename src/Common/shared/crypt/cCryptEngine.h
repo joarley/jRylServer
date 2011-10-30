@@ -30,8 +30,9 @@ public:
         uint16 CodePage;
     
         _CRYPTKEY() {
-            Key1 = rand() % 10;
+            Key1 = 6;//rand() % 10;
             while (Key1 == (Key2 = rand() % 10));
+            Key2 = 5;
             CodePage = 0x0001;
         }
     

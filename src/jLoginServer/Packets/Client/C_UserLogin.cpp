@@ -7,6 +7,7 @@
 
 #include "../../cAccount.h"
 #include "../../cLoginServer.h"
+#include "../../database.h"
 #include "../Server/S_UserLogin.h"
 
 namespace jRylServer {
@@ -15,7 +16,6 @@ namespace PacketClient {
 
 using namespace common::shared;
 using namespace database;
-using namespace soci;
 using namespace std;
 
 UserLogin::UserLogin(Buffer_ptr buff, Account* acc): PacketBase(buff) {
@@ -24,58 +24,48 @@ UserLogin::UserLogin(Buffer_ptr buff, Account* acc): PacketBase(buff) {
         return;
     }
 
-    session* sql = DBMgr::GetInstance().CreateSession();
-    if(sql == NULL) {
-        
+    RESULT_SET result;
+    if(load_characters_view(acc->GetId(), result) == DS_ERROR) {
         return;
     }
 
-    try {        
-        rowset<row> sqlResult = (sql->prepare << "select cf.charinfoid, gd.guildid, gd.name guildname, gd.nation guildnation, pt.partyid,"
-                                                 "       cf.slot, cf.name, cf.sex, cf.hair, cf.face, cf.class, cf.fame, cf.medal, cf.level"
-                                                 "  from charinfo cf"
-                                                 "           left join guild gd"
-                                                 "             on cf.guildid = gd.guildid"
-                                                 "           left join party pt"
-                                                 "             on cf.partyid = pt.partyid"
-                                                 "where accountid = :accountid"
-                                                 "  and excluded = 0",
-                                                 use(acc->GetId()));
-        
-        rowset<row>::iterator begin = sqlResult.begin();
-        while(begin != sqlResult.end()) {
+    
+    for(RESULT_SET::iterator it = result.begin(); it != result.end();it++) {
             Character* character = new Character();  
             Character::CharGeneralDetails* details = new Character::CharGeneralDetails;
             Character::CharEquipView* equipview = new Character::CharEquipView;
             Character::CharGuildView* guildview = new Character::CharGuildView;
 
-            uint32 id = begin->get<uint32>(string("charinfoid"));
-            int slot  = begin->get<uint8>(string("slot"));            
+            uint32 id = DB_CAST<uint32>((*it)["charinfoid"]);
+            int slot  = DB_CAST<int32>((*it)["slot"]);            
 
             details->Id = id;
-            details->GuildId = begin->get<uint32>(string("guildid"));
-            details->PartyId = begin->get<uint32>(string("partyid"));
-            details->Name = begin->get<string>(string("name"));
-            details->Sex = (Character::CharSex)begin->get<uint8>(string("sex"));
-            details->Hair = begin->get<uint8>(string("hair"));
-            details->Face = begin->get<uint8>(string("face"));
-            details->Class = (Character::CharClass)begin->get<uint16>(string("class"));
-            details->Fame = begin->get<uint32>(string("fame"));
-            details->Medals = begin->get<uint32>(string("medal"));
-            details->Level = begin->get<uint8>(string("level"));
+            details->GuildId = DB_CAST<uint32>((*it)["guildid"]);
+            details->PartyId = DB_CAST<uint32>((*it)["partyid"]);
+            details->Name = DB_CAST<string>((*it)["name"]);
+            details->Sex = (Character::CharSex)DB_CAST<int8>((*it)["sex"]);
+            details->Hair = DB_CAST<int8>((*it)["hair"]);
+            details->Face = DB_CAST<int8>((*it)["face"]);
+            details->Class = (Character::CharClass)DB_CAST<int16>((*it)["class"]);
+            details->Fame = DB_CAST<uint32>((*it)["fame"]);
+            details->Medals = DB_CAST<uint32>((*it)["medal"]);
+            details->Level = DB_CAST<uint8>((*it)["level"]);
             
-            guildview->Name = begin->get<string>(string("guildname"));
-            guildview->Nation = (Character::GuildNation)begin->get<uint8>(string("guildnation"));
+            guildview->Name = DB_CAST<string>((*it)["guildname"]);
+            guildview->Nation = (Character::GuildNation)DB_CAST<int8>((*it)["guildnation"]);
 
-            rowset<row> sqlEquipResult = (sql->prepare << "select equippos, prototypeid"
-                                                          "  from charitem"
-                                                          " where charinfoid = :charinfoid"
-                                                          "   and equippos <> 0",
-                                                          use(id));
-
-            rowset<row>::iterator equipbegin = sqlEquipResult.begin();
-            while(equipbegin != sqlEquipResult.end()) {
-                equipview->SetEquipPrototypeId((Character::EquipPos)equipbegin->get<int>(string("equippos")), equipbegin->get<uint16>(string("prototypeid")));
+            
+            RESULT_SET equipresult;
+            if(load_equips_view(details->Id, equipresult) == DS_ERROR) {
+                delete guildview;
+                delete equipview;
+                delete details;
+                delete character;
+                continue;
+            }
+            
+            for(RESULT_SET::iterator itequip = result.begin(); it != result.end();it++) {
+                equipview->SetEquipPrototypeId((Character::EquipPos)DB_CAST<int8>((*it)["equippos"]), DB_CAST<uint16>((*it)["prototypeid"]));
             }
             character->SetId(id);
             character->SetSlot(slot);
@@ -85,15 +75,8 @@ UserLogin::UserLogin(Buffer_ptr buff, Account* acc): PacketBase(buff) {
 
             acc->SetCharacter(slot, character);
 
-            begin++;
+ 
         }
-    } catch(exception e) {
-        DBMgr::GetInstance().FreeSession(sql);
-        Logger::GetInstance().ShowError("%s\n", e.what());
-        acc->Close();
-        return;
-    }
-    DBMgr::GetInstance().FreeSession(sql);
     
     PacketServer::UserLogin ack(acc);
     acc->GetSocketSession()->SendPacket(ack.GetProcessedBuffer());
