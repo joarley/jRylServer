@@ -1,11 +1,12 @@
-#ifndef SOCKET_SESSION
-#define SOCKET_SESSION
+#ifndef SOCKET_SESSION_H
+#define SOCKET_SESSION_H
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
+#include <boost/thread/barrier.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/function.hpp>
@@ -31,7 +32,7 @@ class SocketServer;
 class SocketSession;
 
 typedef boost::shared_ptr<SocketSession> SocketSession_ptr;
-typedef boost::function<void (SocketSession_ptr, Buffer_ptr)> PacketCallBack;
+typedef boost::function<void (SocketSession_ptr, Buffer_ptr) > PacketCallback;
 
 class SocketSession : public boost::enable_shared_from_this<SocketSession> {
 public:
@@ -43,13 +44,13 @@ public:
     bool Start();
     tcp::socket& Socket();
     SocketServer* GetServer();
-    void SetPacketProcessCallBack(PacketCallBack PktProcessCallBack);
+    void SetPacketProcessCallBack(PacketCallback PktProcessCallBack);
     bool Connected() const;
 protected:
     void hRead(Buffer_ptr buff, const boost::system::error_code& error, size_t size);
     void hWrite(Buffer_ptr buff, const boost::system::error_code& error);
     void hPacketProcess();
-    PacketCallBack PacketProcessCallBack;
+    PacketCallback PacketProcessCallBack;
 
     bool m_Connected;
     tcp::socket m_Socket;
@@ -65,6 +66,7 @@ protected:
     boost::mutex m_ProcessingMutex;
     boost::mutex m_isWritingMutex;
     boost::mutex m_stopMutex;
+    boost::barrier m_processingBarrier;
 };
 
 } //namespace network

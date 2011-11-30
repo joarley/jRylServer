@@ -8,6 +8,7 @@
 #include <boost/asio/placeholders.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/asio/write.hpp>
 
 #include "shared/typedef.h"
 #include "shared/cBuffer.h"
@@ -29,7 +30,7 @@ namespace common {
 namespace shared {
 namespace network {
 
-SocketSession::SocketSession(io_service& ioservice) : m_Socket(ioservice) {
+SocketSession::SocketSession(io_service& ioservice) : m_Socket(ioservice), m_processingBarrier(2) {
     m_isWriting = false;
 }
 
@@ -38,8 +39,9 @@ tcp::socket& SocketSession::Socket() {
 }
 
 bool SocketSession::Start(SocketServer& server) {
-    m_PacketProcessThread = boost::thread(&SocketSession::hPacketProcess, this);
-    while(!m_PacketProcessThread.joinable());
+    m_PacketProcessThread = boost::thread(&SocketSession::hPacketProcess, this);    
+    //while(!m_PacketProcessThread.joinable());
+    m_processingBarrier.wait();
 
     m_Server = &server;
     m_Socket.set_option(boost::asio::ip::tcp::no_delay(true));
@@ -57,7 +59,8 @@ bool SocketSession::Start(SocketServer& server) {
 
 bool SocketSession::Start() {
     m_PacketProcessThread = boost::thread(&SocketSession::hPacketProcess, this);
-    while(!m_PacketProcessThread.joinable());
+    //while(!m_PacketProcessThread.joinable());
+    m_processingBarrier.wait();
 
     m_Server = NULL;
     m_Socket.set_option(boost::asio::ip::tcp::no_delay(true));
@@ -87,10 +90,10 @@ bool SocketSession::ConnectServer(string address, string port) {
 }
 
 void SocketSession::hPacketProcess() {
-    while (m_Connected) {       
-        boost::unique_lock<boost::mutex> umu(m_ProcessingMutex);
+    boost::unique_lock<boost::mutex> umu(m_ProcessingMutex);
+    m_processingBarrier.wait();
+    while (m_Connected) {                     
         m_codPacketProcess.wait(umu);
-
         while (!m_ReadQueue.empty() && m_Connected) {
             Buffer_ptr buff = m_ReadQueue.front();
             
@@ -129,7 +132,7 @@ void SocketSession::hRead(Buffer_ptr buff, const boost::system::error_code& erro
     }
 }
 
-void SocketSession::SetPacketProcessCallBack(PacketCallBack PktProcessCallBack) {
+void SocketSession::SetPacketProcessCallBack(PacketCallback PktProcessCallBack) {
     PacketProcessCallBack = PktProcessCallBack;
 }
 
@@ -145,6 +148,7 @@ void SocketSession::SendPacket(Buffer_ptr buff) {
     if (!m_isWriting) {
         m_Socket.async_send(buffer(buff->Data(), buff->Length()),
           boost::bind(&SocketSession::hWrite, this, buff, boost::asio::placeholders::error));
+        
         m_isWriting = true;
     }
     

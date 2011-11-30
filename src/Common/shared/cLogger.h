@@ -76,6 +76,8 @@
 
 #define ISDIGIT(c) (isdigit((unsigned char)(c)))
 
+#define  __LOG jRylServer::common::shared::Logger::GetInstance_ptr()
+
 #if defined(_WIN32) || defined(_WIN64)
 #define is_console(handle) (FILE_TYPE_CHAR==GetFileType(handle))
 #define LOGFILEDESCRIPTOR HANDLE
