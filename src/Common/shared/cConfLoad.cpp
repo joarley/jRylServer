@@ -18,31 +18,46 @@ bool ConfLoad::LoadConfig(const char* file) {
     return true;
 }
 
-bool ConfLoad::GetBool(const char* section, const char* key) {
-	char seckey[1024];
-	sprintf(seckey, "%s:%s", section, key);
-	if (m_dic == NULL || !iniparser_getboolean(m_dic, seckey, 0)) {
+bool ConfLoad::GetBool(const char* section, const char* key, bool &ret) {
+	if (m_dic == NULL) {
         return false;
-    } else {
-        return true;
     }
+    char seckey[1024];
+	sprintf(seckey, "%s:%s", section, key);
+    int aux = iniparser_getboolean(m_dic, seckey, -1);
+    if(aux == -1) {
+        return false;    
+    }
+    ret = (bool)aux;
+    return true;
+    
 }
 
-char* ConfLoad::GetString(const char* section, const char* key) {
+bool ConfLoad::GetString(const char* section, const char* key, string &ret) {
     if (m_dic == NULL) {
-        return NULL;
+        return false;
     }
 	char seckey[1024];
 	sprintf(seckey, "%s:%s", section, key);
-	return iniparser_getstring(m_dic, seckey, NULL);
+	char* aux = iniparser_getstring(m_dic, seckey, NULL);
+    if(aux == NULL) {
+        return false;
+    }
+    ret = aux;
+    return true;
 }
 
- int ConfLoad::GetBytes(byte* ret, const char* section, const char* key) {
+ int ConfLoad::GetBytes(const char* section, const char* key, byte* ret) {
     if (m_dic == NULL) {
-        return NULL;
+        return -1;
     }
-
-    return j_parseHexSeq(GetString(section, key), ret);
+    char seckey[1024];
+	sprintf(seckey, "%s:%s", section, key);
+	char* aux = iniparser_getstring(m_dic, seckey, NULL);
+    if(aux == NULL) {
+        return -1;
+    }
+    return j_parseHexSeq(aux, ret);
  }
 
 ConfLoad::~ConfLoad() {

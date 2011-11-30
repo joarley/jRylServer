@@ -24,16 +24,13 @@ public:
         GGERRO_Checksum = 4
     };
 
-    typedef struct _CRYPTKEY : Packable {
+    struct Cryptkey : Packable {
         uint8 Key1;
         uint8 Key2;
         uint16 CodePage;
     
-        _CRYPTKEY() {
-            Key1 = 6;//rand() % 10;
-            while (Key1 == (Key2 = rand() % 10));
-            Key2 = 5;
-            CodePage = 0x0001;
+        Cryptkey() {
+            CryptEngine::GetInstance().InitKey(*this);
         }
     
         void Pack(Buffer_ptr buffer) {
@@ -43,18 +40,18 @@ public:
         }
     
         void Unpack(Buffer_ptr buffer) {
-            Key1 = buffer->Get<uint8 > ();
-            Key2 = buffer->Get<uint8 > ();
-            CodePage = buffer->Get<uint16 > ();
+            Key1 = buffer->Get<uint8>();
+            Key2 = buffer->Get<uint8>();
+            CodePage = buffer->Get<uint16>();
         }
-    } Cryptkey;
+    };
 
     bool Start();
     void Stop();
 
     void SetGGCryptParams(byte* GGClientSeedKey, byte* GGServerSeedKey, byte* GGKey);
 
-    Cryptkey* getKey();
+    void InitKey(Cryptkey& k);
     void XorCrypt(Buffer_ptr buffer, Cryptkey& key);
     void XorDecrypt(Buffer_ptr buffer);
     
@@ -74,7 +71,8 @@ private:
     SeedCipher::SeedParam m_GGServerSeedParam;
     SeedCipher::SeedParam m_GGClientSeedParam;
 
-    
+    byte m_codePageCount;
+    byte m_codePages[100];
 };
 } //namespace crypt
 } //namespace shared

@@ -49,19 +49,19 @@ inline uint16 EndianChange(uint16 value) {
     return RotateR(value, 8);
 }
 
-inline uint64 EndianChange(int64 value) {
+inline int64 EndianChange(int64 value) {
     return (RotateR(value, 8) & 0xFF000000FF000000)
       | (RotateR(value, 24) & 0x00FF000000FF0000)
       | (RotateL(value, 24) & 0x0000FF000000FF00)
       | (RotateL(value, 8) & 0x000000FF000000FF);
 }
 
-inline uint32 EndianChange(int32 value) {
+inline int32 EndianChange(int32 value) {
     return (RotateR(value, 8) & 0xFF00FF00)
       | (RotateL(value, 8) & 0x00FF00FF);
 }
 
-inline uint16 EndianChange(int16 value) {
+inline int16 EndianChange(int16 value) {
     return RotateR(value, 8);
 }
 

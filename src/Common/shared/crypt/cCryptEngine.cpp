@@ -10,6 +10,8 @@
 #include "shared/iSingleton.h"
 #include "shared/cLogger.h"
 
+#include <ctime>
+
 namespace jRylServer {
 namespace common {
 namespace shared {
@@ -34,6 +36,17 @@ bool CryptEngine::Start() {
 
     SeedCipher::EncRoundKey(m_GGClientSeedParam, m_GGClientSeedKey);
     SeedCipher::EncRoundKey(m_GGServerSeedParam, m_GGServerSeedKey);
+
+    srand((uint)time(0));
+
+    for(int i = 0; i < 100; i++) {
+        m_codePages[i] = rand() % 10;
+        if(m_codePages[i] == m_codePages[i - 1]) {
+            i--;
+        }
+    }
+
+    m_codePageCount = 0;
 
     return true;
 }
@@ -61,14 +74,14 @@ void CryptEngine::XorDecrypt(Buffer_ptr buffer) {
     XorDecryptPacketBody(buffer->Data(), buffer->Length(), key);
 }
 
-void CryptEngine::XorCryptPacketHeader(LPBYTE bytes) {
+void CryptEngine::XorCryptPacketHeader(byte* bytes) {
     for (int i = 1; i < PACKET_HEADER_SIZE; i++) {
         bytes[i] = bytes[i] ^ BitFields[i - 1];
         bytes[i] = (bytes[i] << 1) | (bytes[i] >> 7);
     }
 }
 
-void CryptEngine::XorCryptPacketBody(LPBYTE bytes, size_t size, Cryptkey& key) {
+void CryptEngine::XorCryptPacketBody(byte* bytes, size_t size, Cryptkey& key) {
     int pos1 = (key.CodePage * 10 + key.Key1) * 40;
     int pos2 = (key.CodePage * 10 + key.Key2) * 40;
     for (uint i = PACKET_HEADER_SIZE, j = 0; i < size; i++, j++) {
@@ -76,14 +89,14 @@ void CryptEngine::XorCryptPacketBody(LPBYTE bytes, size_t size, Cryptkey& key) {
     }
 }
 
-void CryptEngine::XorDecryptPacketHeader(LPBYTE bytes) {
+void CryptEngine::XorDecryptPacketHeader(byte* bytes) {
     for (int i = 1; i < PACKET_HEADER_SIZE; i++) {
         bytes[i] = (char) (bytes[i] >> 1) | (char) (bytes[i] << 7);
         bytes[i] = bytes[i] ^ BitFields[i - 1];
     }
 }
 
-void CryptEngine::XorDecryptPacketBody(LPBYTE bytes, size_t size, Cryptkey& key) {
+void CryptEngine::XorDecryptPacketBody(byte* bytes, size_t size, Cryptkey& key) {
     int pos1 = (key.CodePage * 10 + key.Key1) * 40;
     int pos2 = (key.CodePage * 10 + key.Key2) * 40;
     for (uint i = PACKET_HEADER_SIZE, j = 0; i < size; i++, j++) {
@@ -140,6 +153,14 @@ CryptEngine::GGError CryptEngine::GGDecrypt(Buffer_ptr buffer) {
     buffer->SetLength(GGDataSize);
     buffer->SetMaxLength(GGDataSize);
     return GGERRO_Sucess;
+}
+
+void CryptEngine::InitKey(Cryptkey& k) {
+    m_codePageCount++;
+    m_codePageCount %= 50;
+    k.Key1 = m_codePages[m_codePageCount];
+    k.Key2 = m_codePages[m_codePageCount + 1];
+    k.CodePage = 1;
 }
 
 } //namespace crypt

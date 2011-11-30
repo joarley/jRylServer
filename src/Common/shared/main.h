@@ -10,7 +10,9 @@
 #include "shared/cLogger.h"
 #include "shared/time/cTimeMgr.h"
 #include "shared/network/cSocketMgr.h"
+#if defined(USE_DB_ENGINE)
 #include "shared/database/cDBMgr.h"
+#endif
 #include "shared/crypt/cCryptEngine.h"
 
 using namespace jRylServer;
@@ -35,7 +37,7 @@ StartupClass* Main;
 
 int main(int argc, char *argv[]) {
 
-    if(!StartSignalCtrl()) {
+    if (!StartSignalCtrl()) {
         return -1;
     }
 
@@ -54,19 +56,21 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    if(!time::TimeMgr::GetInstance().Start()) {
+    if (!time::TimeMgr::GetInstance().Start()) {
         Logger::GetInstance().ShowError("[main] Error starting TimeMgr\n");
         return -1;
     }
-    if(!network::SocketMgr::GetInstance().Start()) {
+    if (!network::SocketMgr::GetInstance().Start()) {
         Logger::GetInstance().ShowError("[main] Error starting SocketMgr\n");
         return -1;
     }
-    if(!database::DBMgr::GetInstance().Start()) {
+#if defined(USE_DB_ENGINE)
+    if (!database::DBMgr::GetInstance().Start()) {
         Logger::GetInstance().ShowError("[main] Error starting DBMgr\n");
         return -1;
     }
-    if(!crypt::CryptEngine::GetInstance().Start()) {
+#endif
+    if (!crypt::CryptEngine::GetInstance().Start()) {
         Logger::GetInstance().ShowError("[main] Error starting CryptEngine\n");
         return -1;
     }
@@ -75,19 +79,22 @@ int main(int argc, char *argv[]) {
     delete Main;
 
     crypt::CryptEngine::GetInstance().Stop();
+#if defined(USE_DB_ENGINE)
     database::DBMgr::GetInstance().Stop();
+#endif
     time::TimeMgr::GetInstance().Stop();
     network::SocketMgr::GetInstance().Stop();
 
     Logger::GetInstance().ShowMessage(CL_RESET);
-    
 
+#if defined(USE_DB_ENGINE)
     database::DBMgr::DestroyInstance();
+#endif
     Logger::DestroyInstance();
     time::TimeMgr::DestroyInstance();
     crypt::CryptEngine::DestroyInstance();
     network::SocketMgr::DestroyInstance();
-    
+
     return startRet;
 }
 #else

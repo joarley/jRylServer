@@ -90,7 +90,6 @@ void Logger::ClearLogFile(LogFile_ptr file) {
     if (is_console(file->GetFileDescriptor())) {
         ShowMessage(file, CL_CLS);
     }
-
 }
 
 void Logger::ClearDefaultLogFile() {
@@ -107,7 +106,7 @@ void Logger::ShowError(const char* fmt, ...) {
     cprintf(m_DefaultLogFile,
       CL_RED"[Error]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
       timer.tm_mday,
-      timer.tm_mon,
+      timer.tm_mon + 1,
       timer.tm_year + 1900,
       timer.tm_hour,
       timer.tm_min,
@@ -123,7 +122,7 @@ void Logger::ShowError(const char* fmt, ...) {
         cprintf(*begin,
           CL_RED"[Error]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
           timer.tm_mday,
-          timer.tm_mon,
+          timer.tm_mon + 1,
           timer.tm_year + 1900,
           timer.tm_hour,
           timer.tm_min,
@@ -146,7 +145,7 @@ void Logger::ShowInfo(const char* fmt, ...) {
     m_DefaultLogFile->lock();
     cprintf(m_DefaultLogFile, CL_WHITE"[Info]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
       timer.tm_mday,
-      timer.tm_mon,
+      timer.tm_mon + 1,
       timer.tm_year + 1900,
       timer.tm_hour,
       timer.tm_min,
@@ -161,7 +160,7 @@ void Logger::ShowInfo(const char* fmt, ...) {
         (*begin)->lock();
         cprintf(*begin, CL_WHITE"[Info]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
           timer.tm_mday,
-          timer.tm_mon,
+          timer.tm_mon + 1,
           timer.tm_year + 1900,
           timer.tm_hour,
           timer.tm_min,
@@ -183,7 +182,7 @@ void Logger::ShowNotice(const char* fmt, ...) {
     m_DefaultLogFile->lock();
     cprintf(m_DefaultLogFile, CL_WHITE"[Notice]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
       timer.tm_mday,
-      timer.tm_mon,
+      timer.tm_mon + 1,
       timer.tm_year + 1900,
       timer.tm_hour,
       timer.tm_min,
@@ -197,7 +196,7 @@ void Logger::ShowNotice(const char* fmt, ...) {
         (*begin)->lock();
         cprintf(*begin, CL_WHITE"[Notice]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
           timer.tm_mday,
-          timer.tm_mon,
+          timer.tm_mon + 1,
           timer.tm_year + 1900,
           timer.tm_hour,
           timer.tm_min,
@@ -219,7 +218,7 @@ void Logger::ShowWarning(const char* fmt, ...) {
     m_DefaultLogFile->lock();
     cprintf(m_DefaultLogFile, CL_YELLOW"[Warning]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
       timer.tm_mday,
-      timer.tm_mon,
+      timer.tm_mon + 1,
       timer.tm_year + 1900,
       timer.tm_hour,
       timer.tm_min,
@@ -233,7 +232,7 @@ void Logger::ShowWarning(const char* fmt, ...) {
         (*begin)->lock();
         cprintf(*begin, CL_YELLOW"[Warning]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
           timer.tm_mday,
-          timer.tm_mon,
+          timer.tm_mon + 1,
           timer.tm_year + 1900,
           timer.tm_hour,
           timer.tm_min,
@@ -277,7 +276,7 @@ void Logger::ShowError(LogFile_ptr file, const char* fmt, ...) {
     file->lock();
     cprintf(file, CL_RED"[Error]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
       timer.tm_mday,
-      timer.tm_mon,
+      timer.tm_mon + 1,
       timer.tm_year + 1900,
       timer.tm_hour,
       timer.tm_min,
@@ -296,7 +295,7 @@ void Logger::ShowInfo(LogFile_ptr file, const char* fmt, ...) {
     file->lock();
     cprintf(file, CL_WHITE"[Info]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
       timer.tm_mday,
-      timer.tm_mon,
+      timer.tm_mon + 1,
       timer.tm_year + 1900,
       timer.tm_hour,
       timer.tm_min,
@@ -315,7 +314,7 @@ void Logger::ShowNotice(LogFile_ptr file, const char* fmt, ...) {
     file->lock();
     cprintf(file, CL_WHITE"[Notice]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
       timer.tm_mday,
-      timer.tm_mon,
+      timer.tm_mon + 1,
       timer.tm_year + 1900,
       timer.tm_hour,
       timer.tm_min,
@@ -334,7 +333,7 @@ void Logger::ShowWarning(LogFile_ptr file, const char* fmt, ...) {
     file->lock();
     cprintf(file, CL_YELLOW"[Warning]"CL_RESET"[%02d/%02d/%d %02d:%02d:%02d]: ",
       timer.tm_mday,
-      timer.tm_mon,
+      timer.tm_mon + 1,
       timer.tm_year + 1900,
       timer.tm_hour,
       timer.tm_min,
@@ -373,7 +372,7 @@ int Logger::cprintf(LogFile_ptr logfile, const char *fmt, va_list argptr) {
 
     // Print everything to the buffer
     vsprintf(tempbuf, fmt, argptr);
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
     if (!is_console(file) && m_PrintAnsiSeq) {
         WriteFile(file, tempbuf, (DWORD) strlen(tempbuf), &written, 0);
         return 0;
@@ -387,7 +386,7 @@ int Logger::cprintf(LogFile_ptr logfile, const char *fmt, va_list argptr) {
 
     // start with processing
     p = tempbuf;
-#ifdef WIN32
+#if defined(_WIN32) || defined(_WIN64)
     while ((q = strchr(p, 0x1b)) != NULL) { // find the escape character
         if (0 == WriteConsoleA(file, p, (DWORD) (q - p), &written, 0)) // write up to the escape
             WriteFile(file, p, (DWORD) (q - p), &written, 0);

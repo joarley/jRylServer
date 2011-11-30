@@ -1,6 +1,7 @@
 #include "shared/database/cDBMgr.h"
 
 #include "shared/cLogger.h"
+#include "shared/typedef.h"
 
 #include <vector>
 
@@ -88,7 +89,7 @@ bool DBMgr::MyStart() {
 }
 
 void DBMgr::MyStop() {
-    for(int i = 0; i < m_MyConnections.size(); i++) {
+    for(uint i = 0; i < m_MyConnections.size(); i++) {
         mysql_close(&m_MyConnections[i]->Conn);
         delete m_MyConnections[i];
         m_MyConnections[i] = NULL;
