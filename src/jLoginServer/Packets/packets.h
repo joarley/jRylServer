@@ -8,6 +8,7 @@
 #include "Launcher/L_ServerList.h"
 
 #include "Server_AuthServer/SA_AuthServer.h"
+#include "Server_AuthServer/SA_ServerDetail.h"
 
 #include "Server_Laucher/SL_ServerList.h"
 
