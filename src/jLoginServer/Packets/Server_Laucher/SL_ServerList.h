@@ -4,6 +4,8 @@
 #include "shared/cPacketBase.h"
 #include "shared/typedef.h"
 
+#include "../../cAuthServer.h"
+
 namespace jRylServer {
 namespace jLoginServer {
 class LoginServer;
@@ -18,7 +20,7 @@ using namespace common::shared;
 
 class ServerList: public PacketBase{
 public:
-    ServerList(LoginServer* server);
+	ServerList(AuthServer servers[]);
     virtual ~ServerList();
 
     static const uint8 PacketID = 0x56;

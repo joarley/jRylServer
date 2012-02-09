@@ -102,14 +102,21 @@ bool LoginServer::LoadConfig() {
 }
 
 int LoginServer::Start() {
-    return 0;
+	getchar();
+	return 0;
 }
 
 void LoginServer::Stop() {
+    for(int i = 0; i < AUTHSERVER_SLOT_LENGTH; i++) {
+        if(m_AuthServers[i] != NULL) {
+            delete m_AuthServers[i];
+            m_AuthServers[i] = NULL;
+        }
+    }
 }
 
 LoginServer::~LoginServer() {
-
+    
 }
 
 bool LoginServer::ConnectAuthServer(network::SocketSession_ptr socketSession) {
@@ -202,6 +209,7 @@ void LoginServer::CloseAuthServer(AuthServer* authServer) {
     for(int i = 0; i < AUTHSERVER_SLOT_LENGTH; i++) {
         if(m_AuthServers[i] == authServer) {
             delete m_AuthServers[i];
+            m_AuthServers[i] = NULL;
             break;
         }
     }

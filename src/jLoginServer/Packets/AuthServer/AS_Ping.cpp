@@ -1,4 +1,4 @@
-#include "G_Ping.h"
+#include "AS_Ping.h"
 
 #include "shared/typedef.h"
 
@@ -9,7 +9,7 @@ namespace PacketAuthServer {
 using namespace common::shared;
 
 Ping::Ping(Buffer_ptr buff): PacketBase(buff) {
-    
+    m_PingValue = m_Buffer->Get<uint32>();
 }
 
 Ping::~Ping() {

@@ -40,7 +40,7 @@ public:
         m_maxLength = length;
         m_length = length;
         m_readerOffset = 0;
-        m_writerOffset = (uint) length;
+        m_writerOffset = length;
     }
 
     Buffer(const Buffer& b) {
@@ -57,12 +57,12 @@ public:
             return *this;
         }
         *(T*)&m_buffer[m_writerOffset] = value;
-        m_writerOffset += (uint) size;
+        m_writerOffset += size;
         m_length = m_writerOffset > m_length ? m_writerOffset : m_length;
         return *this;
     }
 
-    template<class T> Buffer& Add(T value, int offset) {
+    template<class T> Buffer& Add(T value, size_t offset) {
         BOOST_STATIC_ASSERT_MSG(boost::is_arithmetic<T>::value, "Type mismatch: Arithmetic types use only");
         size_t size = sizeof (T);
         if (offset + size > m_maxLength) {
@@ -78,8 +78,8 @@ public:
         return *this;
     }
 
-    inline Buffer& AddPack(Packable& value, int offset) {
-        uint writeof = m_writerOffset;
+    inline Buffer& AddPack(Packable& value, size_t offset) {
+		size_t writeof = m_writerOffset;
         SetWriteOffset(offset);
         value.Pack(shared_from_this());
         SetWriteOffset(writeof);
@@ -91,7 +91,7 @@ public:
         return AddStringSizeFixed(pvalue, size);
     }
 
-    inline Buffer& AddString(const char* pvalue, int offset) {
+    inline Buffer& AddString(const char* pvalue, size_t offset) {
         size_t size = strlen(pvalue) + 1;
         return AddStringSizeFixed(pvalue, size, offset);
     }
@@ -100,7 +100,7 @@ public:
         return AddString(value.c_str());
     }
 
-    inline Buffer& AddString(string& value, int offset) {
+    inline Buffer& AddString(string& value, size_t offset) {
         return AddString(value.c_str(), offset);
     }
 
@@ -118,12 +118,12 @@ public:
             memset(&m_buffer[m_writerOffset + size - paddingSize], 0, paddingSize);
         }
 
-        m_writerOffset += (uint) size;
+        m_writerOffset += size;
         m_length = m_writerOffset > m_length ? m_writerOffset : m_length;
         return *this;
     }
 
-    inline Buffer& AddStringSizeFixed(const char* pvalue, size_t size, int offset) {
+    inline Buffer& AddStringSizeFixed(const char* pvalue, size_t size, size_t offset) {
         if (offset + size > m_maxLength) {
             return *this;
         }
@@ -142,7 +142,7 @@ public:
         return AddStringSizeFixed(value.c_str(), size);
     }
 
-    inline Buffer& AddStringSizeFixed(string value, size_t size, int offset) {
+    inline Buffer& AddStringSizeFixed(string value, size_t size, size_t offset) {
         return AddStringSizeFixed(value.c_str(), size, offset);
     }
 
@@ -151,11 +151,11 @@ public:
             return *this;
         }
         AddBytes(pvalue, size, m_writerOffset);
-        m_writerOffset += (uint) size;
+        m_writerOffset += size;
         return *this;
     }
 
-    inline Buffer& AddBytes(void* pvalue, size_t size, int offset) {
+    inline Buffer& AddBytes(void* pvalue, size_t size, size_t offset) {
         if (offset + size > m_maxLength) {
             return *this;
         }
@@ -171,11 +171,11 @@ public:
             return T(0);
         }
         T value = *(T*) & m_buffer[m_readerOffset];
-        m_readerOffset += (uint) size;
+        m_readerOffset += size;
         return value;
     }
 
-    template<class T> inline T Get(int offset) {
+    template<class T> inline T Get(size_t offset) {
         BOOST_STATIC_ASSERT_MSG(boost::is_arithmetic<T>::value, "Type mismatch: Arithmetic types use only");
         size_t size = sizeof (T);
         if (offset + size > m_length) {
@@ -188,14 +188,14 @@ public:
         packable.Unpack(shared_from_this());
     }
 
-    void GetPack(Packable& packable, int offset) {
-        uint readerof = m_readerOffset;
+    void GetPack(Packable& packable, size_t offset) {
+        size_t readerof = m_readerOffset;
         SetReaderOffset(offset);
         packable.Unpack(shared_from_this());
         SetReaderOffset(readerof);
     }
 
-    inline LPBYTE GetBytes(int size) {
+    inline LPBYTE GetBytes(size_t size) {
         if (m_readerOffset + size > m_length) {
             return NULL;
         }
@@ -205,7 +205,7 @@ public:
         return value;
     }
 
-    inline LPBYTE GetBytes(int size, size_t offset) {
+    inline LPBYTE GetBytes(size_t size, size_t offset) {
         if (offset + size > m_length) {
             return NULL;
         }
@@ -218,15 +218,15 @@ public:
         BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
     }
 
-    template<class T> inline T GetString(int offset) {
+    template<class T> inline T GetString(size_t offset) {
         BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
     }
 
-    template<class T> inline T GetStringSizeFixed(int size) {
+    template<class T> inline T GetStringSizeFixed(size_t size) {
         BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
     }
 
-    template<class T> inline T GetStringSizeFixed(int size, int offset) {
+    template<class T> inline T GetStringSizeFixed(size_t size, size_t offset) {
         BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
     }
 
@@ -243,30 +243,27 @@ public:
     }
 
     inline void SetLength(size_t length) {
-
         m_length = length < m_maxLength ? length : m_maxLength;
     }
 
     inline void SetMaxLength(size_t length) {
-
         m_buffer.resize(length);
         m_maxLength = length;
     }
 
-    inline void SetReaderOffset(uint offset) {
-
-        m_readerOffset = offset > (uint) m_maxLength ? (uint) m_maxLength : offset;
+    inline void SetReaderOffset(size_t offset) {
+        m_readerOffset = offset > m_maxLength ? m_maxLength : offset;
     }
 
-    inline void SetWriteOffset(uint offset) {
-        m_writerOffset = offset > (uint) m_maxLength ? (uint) m_maxLength : offset;
+    inline void SetWriteOffset(size_t offset) {
+        m_writerOffset = offset > m_maxLength ? m_maxLength : offset;
     }
 protected:
     vector<byte> m_buffer;
     size_t m_maxLength;
     size_t m_length;
-    uint m_readerOffset;
-    uint m_writerOffset;
+    size_t m_readerOffset;
+    size_t m_writerOffset;
 };
 
 using namespace math;
@@ -275,7 +272,7 @@ template<> inline Buffer& Buffer::Add(Half value) {
     return Add((uint16)value);
 }
 
-template<> inline Buffer& Buffer::Add(Half value, int offset) {
+template<> inline Buffer& Buffer::Add(Half value, size_t offset) {
     return Add((uint16)value, offset);
 }
 
@@ -283,7 +280,7 @@ template<> inline Half Buffer::Get<Half>() {
     return Get<uint16>();
 }
 
-template<> inline Half Buffer::Get<Half>(int offset) {
+template<> inline Half Buffer::Get<Half>(size_t offset) {
     return Get<uint16>(offset);
 }
 
@@ -297,12 +294,12 @@ template<> inline char* Buffer::GetString<char*>() {
     }
     char* value = new char[size];
     strcpy(value, (char*) &m_buffer[m_readerOffset]);
-    m_readerOffset += (uint) size;
+    m_readerOffset += size;
     return value;
 }
 
-template<> inline char* Buffer::GetString<char*>(int offset) {
-    if ((uint) offset >= m_length) {
+template<> inline char* Buffer::GetString<char*>(size_t offset) {
+    if (offset >= m_length) {
         return NULL;
     }
     size_t size = strlen((char*) &m_buffer[offset]) + 1;
@@ -324,7 +321,7 @@ template<> inline string Buffer::GetString() {
     return value;
 }
 
-template<> inline string Buffer::GetString(int offset) {
+template<> inline string Buffer::GetString(size_t offset) {
     char* vreturn = GetString<char*>(offset);
     if (!vreturn) {
         return string();
@@ -334,7 +331,7 @@ template<> inline string Buffer::GetString(int offset) {
     return value;
 }
 
-template<> inline char* Buffer::GetStringSizeFixed(int size) {
+template<> inline char* Buffer::GetStringSizeFixed(size_t size) {
     if (m_readerOffset >= m_length) {
         return NULL;
     }
@@ -349,12 +346,12 @@ template<> inline char* Buffer::GetStringSizeFixed(int size) {
     return value;
 }
 
-template<> inline char* Buffer::GetStringSizeFixed(int size, int offset) {
-    if ((uint) offset >= m_length) {
+template<> inline char* Buffer::GetStringSizeFixed(size_t size, size_t offset) {
+    if (offset >= m_length) {
         return NULL;
     }
 
-    if ((uint) offset + size >= m_length) {
+    if (offset + size >= m_length) {
         return NULL;
     }
     char* value = new char[size + 1];
@@ -363,7 +360,7 @@ template<> inline char* Buffer::GetStringSizeFixed(int size, int offset) {
     return value;
 }
 
-template<> inline string Buffer::GetStringSizeFixed(int size) {
+template<> inline string Buffer::GetStringSizeFixed(size_t size) {
     char* vreturn = GetStringSizeFixed<char*>(size);
     if (!vreturn) {
         return string();
@@ -373,7 +370,7 @@ template<> inline string Buffer::GetStringSizeFixed(int size) {
     return value;
 }
 
-template<> inline string Buffer::GetStringSizeFixed(int size, int offset) {
+template<> inline string Buffer::GetStringSizeFixed(size_t size, size_t offset) {
     char* vreturn = GetStringSizeFixed<char*>(size, offset);
     if (!vreturn) {
         return string();

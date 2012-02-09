@@ -6,13 +6,14 @@
 
 namespace jRylServer {
 namespace jLoginServer {
+class LoginServer;
 namespace PacketLauncher {
 
 using namespace common::shared;
 
 class ServerList: public PacketBase{
 public:
-    ServerList(Buffer_ptr buff);
+    ServerList(Buffer_ptr buff, LoginServer* loginServer);
     virtual ~ServerList();
 
     static const uint8 PacketID = 0x56;
@@ -21,7 +22,6 @@ public:
     //Packet struct
     //uint32 ClientVersion;
 private:
-
 };
 
 } //PacketLauncher
