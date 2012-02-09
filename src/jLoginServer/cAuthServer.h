@@ -14,6 +14,11 @@ class LoginServer;
 
 class AuthServer {
 public:
+    enum AuthServerStatus {
+        ASS_OK,
+        ASS_WAIT_DETAILS
+    };
+
     AuthServer(common::shared::network::SocketSession_ptr session, LoginServer* loginServer);
     ~AuthServer();
 
@@ -28,6 +33,7 @@ private:
     uint32 m_LastPing;
     common::shared::network::SocketSession_ptr m_SocketSession;
     LoginServer *m_LoginServer;
+    AuthServerStatus m_Status;
     
     void PacketParser(common::shared::network::SocketSession_ptr session, common::shared::Buffer_ptr buff);
 };

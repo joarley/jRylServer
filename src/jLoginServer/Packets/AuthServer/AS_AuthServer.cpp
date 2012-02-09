@@ -1,4 +1,4 @@
-#include "G_AuthServer.h"
+#include "AS_AuthServer.h"
 
 #include "shared/typedef.h"
 

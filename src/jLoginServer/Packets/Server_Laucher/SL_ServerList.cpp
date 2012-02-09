@@ -1,4 +1,5 @@
 #include "SL_ServerList.h"
+#include "../../cAuthServer.h"
 
 #include "shared/typedef.h"
 
@@ -7,8 +8,8 @@ namespace jLoginServer {
 namespace PacketServer_Laucher {
 using namespace common::shared;
 
-ServerList::ServerList(LoginServer* server): PacketBase(PacketID, PacketLength) {
-    
+ServerList::ServerList(AuthServer servers[]): PacketBase(PacketID, PacketLength) {
+	
 }
 
 ServerList::~ServerList() {
