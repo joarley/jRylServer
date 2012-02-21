@@ -86,7 +86,7 @@
 #else
 #define is_console(file) (0!=isatty(fileno(file)))
 #define LOGFILEDESCRIPTOR FILE*
-#define define INVALID_FILEDESCRIPTOR NULL
+#define INVALID_FILEDESCRIPTOR NULL
 #define _STDOUT_ stdout
 #endif
 

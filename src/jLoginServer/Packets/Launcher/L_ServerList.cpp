@@ -11,7 +11,7 @@ namespace PacketLauncher {
 using namespace common::shared;
 
 ServerList::ServerList(Buffer_ptr buff, LoginServer* loginServer): PacketBase(buff) {
-	loginServer->
+	//loginServer->
 }
 
 ServerList::~ServerList() {

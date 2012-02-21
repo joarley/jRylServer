@@ -215,22 +215,22 @@ public:
     }
 
     template<class T> inline T GetString() {
-        BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
+        //BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
     }
 
     template<class T> inline T GetString(size_t offset) {
-        BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
+        //BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
     }
 
     template<class T> inline T GetStringSizeFixed(size_t size) {
-        BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
+        //BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
     }
 
     template<class T> inline T GetStringSizeFixed(size_t size, size_t offset) {
-        BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
+        //BOOST_STATIC_ASSERT_MSG(true == false, "Type mismatch use GetString<string>() or GetString<char*>()");
     }
 
-    inline LPBYTE Data() {
+    inline byte* Data() {
         return &m_buffer[0];
     }
 
@@ -257,6 +257,14 @@ public:
 
     inline void SetWriteOffset(size_t offset) {
         m_writerOffset = offset > m_maxLength ? m_maxLength : offset;
+    }
+    
+    inline size_t GetReaderOffset() {
+        return m_readerOffset;
+    }
+
+    inline size_t GetWriteOffset() {
+        return m_writerOffset;
     }
 protected:
     vector<byte> m_buffer;

@@ -29,7 +29,7 @@ DBMgr::MyConnection* DBMgr::MyGetConnection() {
     if(ret == NULL) {
         ret = new MyConnection;
         if(mysql_real_connect(&ret->Conn, m_myHost.c_str(), m_myUser.c_str(), m_myPass.c_str(),
-                                m_myDb.c_str(), m_myPort, NULL, NULL) == NULL) {
+                                m_myDb.c_str(), m_myPort, NULL, 0) == NULL) {
             Logger::GetInstance().ShowError("Error create temp database connection: [%d] %s", mysql_errno(&ret->Conn), mysql_error(&ret->Conn));
             delete ret;
             return NULL;
@@ -78,7 +78,7 @@ bool DBMgr::MyStart() {
         conn->IsTemp = false;
         mysql_init(&conn->Conn);
         if(mysql_real_connect(&conn->Conn, m_myHost.c_str(), m_myUser.c_str(), m_myPass.c_str(),
-                                m_myDb.c_str(), m_myPort, NULL, NULL) == NULL) {
+                                m_myDb.c_str(), m_myPort, NULL, 0) == NULL) {
             Logger::GetInstance().ShowError("Error connect database: [%d] %s", mysql_errno(&conn->Conn), mysql_error(&conn->Conn));
             return false;
         }

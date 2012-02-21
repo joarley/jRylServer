@@ -20,6 +20,7 @@ using namespace std;
 #define STARTUP_CLASS jLoginServer::LoginServer
 #define MODULE_NAME "LoginServer"
 #include "shared/main.h"
+#include "shared/database/cDBMgr.h"
 
 namespace jRylServer {
 namespace jLoginServer {
@@ -27,10 +28,13 @@ using namespace common::shared;
 
 LoginServer::LoginServer(std::vector<std::string> params) {
     m_Version = 0;
-    memset(m_AuthServers, NULL, sizeof(AuthServer*) * AUTHSERVER_SLOT_LENGTH);
+    memset(m_AuthServers, 0, sizeof(AuthServer*) * AUTHSERVER_SLOT_LENGTH);
 }
 
 bool LoginServer::LoadConfig() {
+    DBTypeTrait<bool>::Mysql::Type();
+    DBTypeTrait<int>::Mysql::Type();
+    
     ConfLoad confGlobal;
     ConfLoad confLoginServer;
     if (!confGlobal.LoadConfig(FILE_CONF_GLOBAL_INI)) {

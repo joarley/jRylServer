@@ -124,7 +124,9 @@ BOOL sighandler(DWORD fdwCtrlType) {
 }
 
 #else
-
+bool StartSignalCtrl() {
+    return true;
+}
 #endif
 
 #endif
