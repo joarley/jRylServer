@@ -7,25 +7,103 @@
 #include <mysql.h>
 
 #include <ctime>
-
-template<class T> struct TypeTrait_Mysql {
-    static enum_field_types Type;
+namespace {
+template<class T> struct MysqlTrait {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_NULL;
+    }
 };
 
-template<class T> enum_field_types TypeTrait_Mysql<T>::Type = MYSQL_TYPE_NULL;
-template<> enum_field_types TypeTrait_Mysql<bool>::Type = MYSQL_TYPE_TINY;
-template<> enum_field_types TypeTrait_Mysql<int8>::Type = MYSQL_TYPE_TINY;
-template<> enum_field_types TypeTrait_Mysql<uint8>::Type = MYSQL_TYPE_TINY;
-template<> enum_field_types TypeTrait_Mysql<int16>::Type = MYSQL_TYPE_SHORT;
-template<> enum_field_types TypeTrait_Mysql<uint16>::Type = MYSQL_TYPE_SHORT;
-template<> enum_field_types TypeTrait_Mysql<int32>::Type = MYSQL_TYPE_LONG;
-template<> enum_field_types TypeTrait_Mysql<uint32>::Type = MYSQL_TYPE_LONG;
-template<> enum_field_types TypeTrait_Mysql<int64>::Type = MYSQL_TYPE_LONGLONG;
-template<> enum_field_types TypeTrait_Mysql<uint64>::Type = MYSQL_TYPE_LONGLONG;
-template<> enum_field_types TypeTrait_Mysql<f32>::Type = MYSQL_TYPE_FLOAT;
-template<> enum_field_types TypeTrait_Mysql<f64>::Type = MYSQL_TYPE_DOUBLE;
-template<> enum_field_types TypeTrait_Mysql<const char*>::Type = MYSQL_TYPE_STRING;
-template<> enum_field_types TypeTrait_Mysql<tm>::Type = MYSQL_TYPE_DATETIME;
-template<> enum_field_types TypeTrait_Mysql<jRylServer::common::shared::Buffer_ptr>::Type = MYSQL_TYPE_BLOB;
+template<> struct MysqlTrait<bool> {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_TINY;
+    }
+};
+
+template<> struct MysqlTrait<int8> {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_TINY;
+    }
+};
+
+template<> struct MysqlTrait<uint8> {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_TINY;
+    }
+};
+
+template<> struct MysqlTrait<int16> {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_SHORT;
+    }
+};
+
+template<> struct MysqlTrait<uint16> {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_SHORT;
+    }
+};
+
+template<> struct MysqlTrait<int32> {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_LONG;
+    }
+};
+
+template<> struct MysqlTrait<uint32> {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_LONG;
+    }
+};
+
+template<> struct MysqlTrait<int64> {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_LONGLONG;
+    }
+};
+
+template<> struct MysqlTrait<uint64> {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_LONGLONG;
+    }
+};
+
+template<> struct MysqlTrait<f32> {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_FLOAT;
+    }
+};
+
+template<> struct MysqlTrait<f64> {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_DOUBLE;
+    }
+};
+
+template<> struct MysqlTrait<const char*> {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_STRING;
+    }
+};
+
+template<> struct MysqlTrait<tm> {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_DATETIME;
+    }
+};
+
+template<> struct MysqlTrait<jRylServer::common::shared::Buffer_ptr> {
+    inline static enum_field_types GetType() {
+        return MYSQL_TYPE_BLOB;
+    }
+};
+}
+
+template <class T> struct DBTypeTrait {
+    struct Mysql {
+        inline static enum_field_types Type() {return MysqlTrait<T>::GetType();};
+    };
+};
+
 
 #endif

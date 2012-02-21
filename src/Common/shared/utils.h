@@ -65,14 +65,6 @@ inline int16 EndianChange(int16 value) {
     return RotateR(value, 8);
 }
 
-template<class T> typename boost::enable_if<boost::is_integral<T>, T>::type j_aton(const char *nptr) {
-    return j_atoi<T>(nptr);
-}
-
-template<class T> typename boost::enable_if<boost::is_float<T>, T>::type j_aton(const char *nptr) {
-    return j_atof<T>(nptr);
-}
-
 template<class T> T j_atoi(const char *nptr) {
     char *s = (char *) nptr;
     T acc = 0;
@@ -175,6 +167,15 @@ char* j_ftoa(double in);
 template<class T> T j_atof(const char *nptr) {
     return T(atof(nptr));
 }
+
+template<class T> typename boost::enable_if<boost::is_integral<T>, T>::type j_aton(const char *nptr) {
+    return j_atoi<T>(nptr);
+}
+
+template<class T> typename boost::enable_if<boost::is_float<T>, T>::type j_aton(const char *nptr) {
+    return j_atof<T>(nptr);
+}
+
 } //namespace shared
 } //namespace common
 } //namespace jRylServer

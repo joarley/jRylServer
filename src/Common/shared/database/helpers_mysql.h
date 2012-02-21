@@ -32,7 +32,7 @@ inline MYSQL_STMT* my_prepare(const char* text, MYSQL* conn) {
 
 template<class T> inline void my_prepare_bind(MYSQL_BIND* res, T& value) {
     res->buffer = (void*)&value;
-    res->buffer_type = TypeTrait_Mysql<T>::Type;
+    res->buffer_type = DBTypeTrait<T>::Mysql::Type();
     res->buffer_length = sizeof(T);
     res->is_null = &res->is_null_value;
     if(boost::is_unsigned<T>::value) {
@@ -42,7 +42,7 @@ template<class T> inline void my_prepare_bind(MYSQL_BIND* res, T& value) {
 
 inline void my_prepare_bind(MYSQL_BIND* res, Buffer_ptr value) {
     res->buffer = (void*)value->Data();
-    res->buffer_type = TypeTrait_Mysql<Buffer_ptr>::Type;
+    res->buffer_type = DBTypeTrait<Buffer_ptr>::Mysql::Type();
     res->buffer_length = static_cast<unsigned long>(value->MaxLength());
     res->length = &res->buffer_length;
     res->is_null = &res->is_null_value;
@@ -50,7 +50,7 @@ inline void my_prepare_bind(MYSQL_BIND* res, Buffer_ptr value) {
 
 inline void my_prepare_bind(MYSQL_BIND* res, const char* value, size_t size) {
     res->buffer = (void*)value;
-    res->buffer_type = TypeTrait_Mysql<const char*>::Type;
+    res->buffer_type = DBTypeTrait<const char*>::Mysql::Type();
     res->buffer_length = static_cast<unsigned long>(size);
     res->is_null = &res->is_null_value;
 }

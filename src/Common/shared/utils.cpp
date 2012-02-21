@@ -3,6 +3,7 @@
 #include <boost/thread/mutex.hpp>
 #include "shared/typedef.h"
 #include <ctime>
+#include <stdio.h>
 
 namespace jRylServer {
 namespace common {
@@ -18,8 +19,8 @@ void j_GetLocalTime(tm* tmResult) {
 }
 
 int j_hexStrToBytes(char* src, byte* dst) {
-	static char* hex = "0123456789abcdef";
-	static char* HEX = "0123456789ABCDEF";
+	static const char* hex = "0123456789abcdef";
+	static const char* HEX = "0123456789ABCDEF";
 	byte *dstini = dst;
 	while(*src) {
 		int i;
