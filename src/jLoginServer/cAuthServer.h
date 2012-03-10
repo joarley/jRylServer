@@ -10,49 +10,57 @@ using namespace std;
 
 namespace jRylServer {
 namespace jLoginServer {
-class LoginServer;
+using namespace common::shared;
 
 class AuthServer {
 public:
-    enum AuthServerStatus {
-        ASS_OK,
-        ASS_WAIT_DETAILS
-    };
+	enum AuthServerStatus {
+		ASS_OK,
+		ASS_WAIT_DETAILS
+	};
+	AuthServer(network::SocketSession_ptr session);
+	~AuthServer();
+	void PacketParser(common::shared::network::SocketSession_ptr session, common::shared::Buffer_ptr buff);
 
-    AuthServer(common::shared::network::SocketSession_ptr session, LoginServer* loginServer);
-    ~AuthServer();
-
-    inline uint32 GetAdress();
+	inline network::SocketSession_ptr GetSocketSession();
+	inline uint8 GetGroup();
     inline string GetName();
-    inline uint8 GetGroup();
+    inline uint32 GetAddress();
     inline uint32 GetLastPing();
+	inline AuthServerStatus GetStatus();
 private:
-    uint8 m_Group;
-    string m_Name;
-    uint32 m_Adress;
-    uint32 m_LastPing;
-    common::shared::network::SocketSession_ptr m_SocketSession;
-    LoginServer *m_LoginServer;
-    AuthServerStatus m_Status;
-    
-    void PacketParser(common::shared::network::SocketSession_ptr session, common::shared::Buffer_ptr buff);
+	uint8 m_group;
+    string m_name;
+    uint32 m_address;
+    uint32 m_lastPing;
+    common::shared::network::SocketSession_ptr m_socketSession;
+	AuthServerStatus m_status;
 };
 
-inline uint32 AuthServer::GetAdress() {
-    return m_Adress;
-}
-
-inline string AuthServer::GetName() {
-    return m_Name;
+inline network::SocketSession_ptr AuthServer::GetSocketSession() {
+	return m_socketSession;
 }
 
 inline uint8 AuthServer::GetGroup() {
-    return m_Group;
+	return m_group;
+}
+
+inline string AuthServer::GetName() {
+	return m_name;
+}
+
+inline uint32 AuthServer::GetAddress() {
+	return m_address;
 }
 
 inline uint32 AuthServer::GetLastPing() {
-    return m_LastPing;
+	return m_lastPing;
 }
+
+inline AuthServer::AuthServerStatus AuthServer::GetStatus() {
+	return m_status;
+}
+
 
 } //jLoginServer
 } //jRylServer

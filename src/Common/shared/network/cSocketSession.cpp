@@ -8,14 +8,14 @@
 #include <boost/asio/placeholders.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/asio/write.hpp>
 
 #include "shared/typedef.h"
 #include "shared/cBuffer.h"
-#include "shared/cPacketBase.h"
 #include "shared/cLogger.h"
 #include "shared/network/cSocketServer.h"
 #include "shared/utils.h"
+#include "shared/crypt/cCryptEngine.h"
+#include "shared/cPacketBase.h"
 
 #include <stddef.h>
 #include <queue>
@@ -39,8 +39,7 @@ tcp::socket& SocketSession::Socket() {
 }
 
 bool SocketSession::Start(SocketServer& server) {
-    m_PacketProcessThread = boost::thread(&SocketSession::hPacketProcess, this);    
-    //while(!m_PacketProcessThread.joinable());
+    m_PacketProcessThread = boost::thread(&SocketSession::hPacketProcess, this);
     m_processingBarrier.wait();
 
     m_Server = &server;
@@ -48,7 +47,7 @@ bool SocketSession::Start(SocketServer& server) {
     m_Connected = true;
     
     Buffer_ptr buff(new Buffer());
-    m_Socket.async_receive(buffer(buff->Data(), buff->MaxLength()),
+	m_Socket.async_receive(buffer(buff->Data(), buff->MaxLength()),
       boost::bind(&SocketSession::hRead, this,
       buff,
       boost::asio::placeholders::error,
@@ -59,15 +58,16 @@ bool SocketSession::Start(SocketServer& server) {
 
 bool SocketSession::Start() {
     m_PacketProcessThread = boost::thread(&SocketSession::hPacketProcess, this);
-    //while(!m_PacketProcessThread.joinable());
     m_processingBarrier.wait();
 
     m_Server = NULL;
-    m_Socket.set_option(boost::asio::ip::tcp::no_delay(true));
+	boost::system::error_code ec;
+    m_Socket.set_option(boost::asio::ip::tcp::no_delay(true), ec);
+	
     m_Connected = true;
     
     Buffer_ptr buff(new Buffer());
-    m_Socket.async_receive(buffer(buff->Data(), buff->MaxLength()),
+	m_Socket.async_read_some(buffer(buff->Data(), buff->MaxLength()),
       boost::bind(&SocketSession::hRead, this,
       buff,
       boost::asio::placeholders::error,
@@ -77,12 +77,15 @@ bool SocketSession::Start() {
 
 bool SocketSession::ConnectServer(string address, string port) {
     boost::system::error_code ec;
-    boost::asio::ip::address addr = boost::asio::ip::address::from_string(address, ec);
-    if(ec) {
+	tcp::resolver res(m_Socket.get_io_service());
+    tcp::resolver::query qry(boost::asio::ip::tcp::v4(), address, port);
+    tcp::resolver::iterator iteBegin = res.resolve(qry, ec);
+    if (ec) {
+        Logger::GetInstance().ShowError(ec.message().c_str());
         return false;
     }
-    boost::asio::ip::tcp::endpoint end(addr, j_atoi<uint16>(port.c_str()));
-    m_Socket.connect(end, ec);
+
+	m_Socket.connect(iteBegin->endpoint(), ec);
     if(ec) {
         return false;
     }
@@ -111,16 +114,35 @@ void SocketSession::hPacketProcess() {
     m_ReadQueueMutex.unlock();
 }
 
+void SocketSession::tratar(Buffer_ptr buff) {
+	crypt::CryptEngine::GetInstance().XorDecryptPacketHeader(buff->Data());
+	crypt::CryptEngine::Cryptkey key;
+    buff->GetPack(key, 4);
+	uint16 packetSize = buff->Get<uint16>(2) & ~(PACKET_TYPE_COMPRESSED | PACKET_TYPE_NORMAL);
+	crypt::CryptEngine::GetInstance().XorDecryptPacketBody(buff->Data(), packetSize, key);
+	size_t bufferSize = buff->Length();
+	Buffer_ptr b;
+	if(packetSize < bufferSize) {
+		b.reset(new Buffer(bufferSize - packetSize));
+		b->AddBytes(buff->Data() + packetSize, bufferSize - packetSize, 0);
+	}
+	buff->SetLength(packetSize);
+	m_ReadQueueMutex.lock();
+    m_ReadQueue.push(buff);
+    m_ReadQueueMutex.unlock();
+	
+	if(packetSize < bufferSize) {
+		tratar(b);	
+	}	
+}
+
 void SocketSession::hRead(Buffer_ptr buff, const boost::system::error_code& error, size_t bytes_transferred) {
     if (!error && m_Connected) {
-        buff->SetLength(bytes_transferred);
-        
-        m_ReadQueueMutex.lock();
-        m_ReadQueue.push(buff);
-        m_ReadQueueMutex.unlock();
+		buff->SetLength(bytes_transferred);
+		tratar(buff);        
 
         buff.reset(new Buffer());
-        m_Socket.async_receive(buffer(buff->Data(), buff->MaxLength()),
+		m_Socket.async_receive(buffer(buff->Data(), buff->MaxLength()),
           boost::bind(&SocketSession::hRead, this,
           buff,
           boost::asio::placeholders::error,
@@ -136,17 +158,20 @@ void SocketSession::SetPacketProcessCallBack(PacketCallback PktProcessCallBack) 
     PacketProcessCallBack = PktProcessCallBack;
 }
 
-void SocketSession::SendPacket(Buffer_ptr buff) {
+void SocketSession::SendPacket(PacketBase& packet) {
     if (!m_Connected) {
         return;
     }
-
+	Buffer_ptr buff = packet.GetProcessedBuffer();
+	crypt::CryptEngine::Cryptkey key;
+    buff->GetPack(key, 4);
+	crypt::CryptEngine::GetInstance().XorCrypt(buff, key);
     m_isWritingMutex.lock();
     m_WriteQueueMutex.lock();
     
     m_WriteQueue.push(buff);
     if (!m_isWriting) {
-        m_Socket.async_send(buffer(buff->Data(), buff->Length()),
+		m_Socket.async_send(buffer(buff->Data(), buff->Length()),
           boost::bind(&SocketSession::hWrite, this, buff, boost::asio::placeholders::error));
         
         m_isWriting = true;
@@ -168,7 +193,7 @@ void SocketSession::hWrite(Buffer_ptr buff, const boost::system::error_code& err
         m_WriteQueue.pop();
         if (!m_WriteQueue.empty()) {
             Buffer_ptr buff = m_WriteQueue.front();
-            m_Socket.async_send(buffer(buff->Data(), buff->Length()),
+			m_Socket.async_send(buffer(buff->Data(), buff->Length()),
               boost::bind(&SocketSession::hWrite, this, buff,boost::asio::placeholders::error));
         } else {
             m_isWriting = false;
@@ -198,7 +223,9 @@ void SocketSession::Stop() {
 
     m_codPacketProcess.notify_all();
     m_PacketProcessThread.join();
-    m_Server->ReleaseClient(shared_from_this());
+    if(m_Server != NULL) {
+		m_Server->ReleaseClient(shared_from_this());
+	}
 }
 
 SocketServer* SocketSession::GetServer() {

@@ -26,6 +26,7 @@ public:
     SocketServer* GetServer(string name);
     void DestroyServer(string name);
     void DestroyServer(SocketServer* server);
+	inline boost::asio::io_service* GetService();
 private:
     SocketMgr() {m_running = false;}
     boost::asio::io_service m_service;
@@ -34,6 +35,10 @@ private:
     map<string, SocketServer*> m_servers;
     bool m_running;
 };
+
+inline boost::asio::io_service* SocketMgr::GetService() {
+	return &m_service;
+}
 
 } //namespace network
 } //namespace common

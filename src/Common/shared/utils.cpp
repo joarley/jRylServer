@@ -127,6 +127,21 @@ char* j_ftoa(double in) {
     return result;
 }
 
+char*  IpToStr(uint32 ip) {
+	static int buffPos = -1;
+    static char buff[32][16];
+    buffPos++;
+    if(buffPos == 32) {
+        buffPos = 0;
+    }
+	
+    char* result = buff[buffPos]; 
+
+	sprintf(result, "%d.%d.%d.%d", int32(GetByte(ip, 3)), int32(GetByte(ip, 2)), int32(GetByte(ip, 1)), int32(GetByte(ip, 0))); 
+	
+	return result;
+}
+
 } //namespace shared
 } //namespace common
 } //namespace jRylServer

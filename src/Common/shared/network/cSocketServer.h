@@ -22,6 +22,7 @@ namespace shared {
 namespace network {
 
 typedef boost::function<bool(SocketSession_ptr)> SocketServerCallBack;
+typedef boost::function<void(SocketSession_ptr)> SocketServerCloseCallBack;
 
 class SocketServer {
 public:
@@ -31,6 +32,7 @@ public:
     void Stop();
     bool Started();
     void SetAcceptCallBack(SocketServerCallBack ServerCallBack);
+	void SetCloseCallBack(SocketServerCloseCallBack ServerCallBack);
     void ReleaseClient(SocketSession_ptr client);
     void SetName(string name);
     string GetName();
@@ -38,6 +40,7 @@ protected:
     bool m_started;
     void hAccept(SocketSession_ptr newClient, const boost::system::error_code& error);
     SocketServerCallBack AcceptCallBack;
+	SocketServerCloseCallBack CloseCallBack;
     io_service& m_IOService;
     tcp::acceptor m_Acceptor;
     set<SocketSession_ptr> m_ClientSessions;

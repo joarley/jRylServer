@@ -24,9 +24,7 @@ namespace shared {
 namespace network {
 
 SocketServer::SocketServer(io_service& IOService) :
-m_IOService(IOService), m_Acceptor(IOService) {
-    AcceptCallBack = NULL;
-}
+ m_IOService(IOService), m_Acceptor(IOService), AcceptCallBack(NULL), CloseCallBack(NULL) { }
 
 bool SocketServer::Bind(string listenAdress, string listenPort) {
     boost::system::error_code ec;
@@ -98,6 +96,9 @@ void SocketServer::hAccept(SocketSession_ptr newClient, const boost::system::err
 
 void SocketServer::ReleaseClient(SocketSession_ptr client) {
     m_ClientSessions.erase(client);
+	if(CloseCallBack != NULL && m_started) {
+		CloseCallBack(client);
+	}
 }
 
 void SocketServer::Stop() {
@@ -119,6 +120,10 @@ void SocketServer::Stop() {
 
 void SocketServer::SetAcceptCallBack(SocketServerCallBack AccCallBack) {
     AcceptCallBack = AccCallBack;
+}
+
+void SocketServer::SetCloseCallBack(SocketServerCloseCallBack closeCallBack) {
+    CloseCallBack = closeCallBack;
 }
 
 void SocketServer::SetName(string name) {
