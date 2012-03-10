@@ -19,7 +19,7 @@ namespace shared {
 void j_GetLocalTime(tm* tmResult);
 int j_hexStrToBytes(char* src, byte* dst);
 int j_parseHexSeq(char* src, byte* dst);
-
+char*  IpToStr(uint32 ip);
 
 template<class T> inline byte GetByte(T value, int pos) {
     return (byte) (value >> (pos * 8));

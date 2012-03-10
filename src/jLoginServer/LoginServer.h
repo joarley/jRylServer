@@ -9,7 +9,7 @@
 #include "shared/cLogger.h"
 #include "shared/cBuffer.h"
 
-#include "cAuthServer.h"
+#include "cAuthServerMgr.h"
 
 #include <map>
 #include <string>
@@ -29,33 +29,20 @@ public:
     void Stop();
     bool LoadConfig();
 
-    bool ConnectAuthServer(network::SocketSession_ptr socketSession);
-    void ParsePacketUnauthorizedSession(network::SocketSession_ptr socketSession, Buffer_ptr buff);
-    void CloseAuthServer(AuthServer* authServer);
-
+	bool ConnectLauncher(network::SocketSession_ptr socketSession);
+	void ParsePacketLauncher(network::SocketSession_ptr socketSession, Buffer_ptr buff);
 protected:
-    struct UnauthorizedSession {
-        enum UnauthorizedSessionState {
-            US_WAIT_PING,
-            US_WAIT_USERPASS
-        };
-        UnauthorizedSessionState State;
-        time_t Time;
-        int32 AttemptLogin;
-    };
+	string m_address;
+	uint32 m_version;
+	string m_patchAddress;
+    string m_launcherListenPort;
+	string m_authServerListenPort;
+	network::SocketServer* m_launcherListen;
 
-    uint32 m_Version;
-    string m_PatchAddress;
-
-    string m_Address;
-    string m_LauncherListenPort;
-    string m_AuthServerListenPort;
-    AuthServer* m_AuthServers[AUTHSERVER_SLOT_LENGTH];
-    map<network::SocketSession_ptr, UnauthorizedSession> m_UnauthorizedSessions;
-
-    string m_GlobalUser;
-    string m_GlobalPass;
-    Logger::LogFile_ptr m_LogFile;
+	AuthServerMgr m_authServerMgr;
+    string m_globalUser;
+    string m_globalPass;
+    Logger::LogFile_ptr m_logFile;
 };
 
 }

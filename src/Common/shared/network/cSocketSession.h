@@ -14,6 +14,7 @@
 #include "shared/typedef.h"
 #include "shared/cBuffer.h"
 #include "shared/cPacketBase.h"
+#include "shared/cPacketBase.h"
 
 #include <stddef.h>
 #include <queue>
@@ -38,7 +39,7 @@ class SocketSession : public boost::enable_shared_from_this<SocketSession> {
 public:
     SocketSession(io_service& ioservice);
     bool ConnectServer(string address, string port);
-    void SendPacket(Buffer_ptr buffer);
+	void SendPacket(PacketBase& packet);
     void Stop();
     bool Start(SocketServer& server);
     bool Start();
@@ -46,6 +47,8 @@ public:
     SocketServer* GetServer();
     void SetPacketProcessCallBack(PacketCallback PktProcessCallBack);
     bool Connected() const;
+
+	void tratar(Buffer_ptr buff);
 protected:
     void hRead(Buffer_ptr buff, const boost::system::error_code& error, size_t size);
     void hWrite(Buffer_ptr buff, const boost::system::error_code& error);

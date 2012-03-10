@@ -10,7 +10,12 @@
 #include "shared/utils.h"
 #include "shared/crypt/cCryptEngine.h"
 
-#include "Packets/packets.h"
+#include "cAuthServerMgr.h"
+#include "cAuthServer.h"
+
+#include "shared/packet/pktPing.h"
+#include "shared/packet/pktServerList.h"
+#include "shared/packet/pktServerListAsk.h"
 
 #include <ctime>
 #include <string>
@@ -26,15 +31,9 @@ namespace jRylServer {
 namespace jLoginServer {
 using namespace common::shared;
 
-LoginServer::LoginServer(std::vector<std::string> params) {
-    m_Version = 0;
-    memset(m_AuthServers, 0, sizeof(AuthServer*) * AUTHSERVER_SLOT_LENGTH);
-}
+LoginServer::LoginServer(std::vector<std::string> params) { }
 
 bool LoginServer::LoadConfig() {
-    DBTypeTrait<bool>::Mysql::Type();
-    DBTypeTrait<int>::Mysql::Type();
-    
     ConfLoad confGlobal;
     ConfLoad confLoginServer;
     if (!confGlobal.LoadConfig(FILE_CONF_GLOBAL_INI)) {
@@ -58,31 +57,41 @@ bool LoginServer::LoadConfig() {
             __LOG->ShowError("LoginServer::LoadConfig: Error key LoginServer::Log:File\n");
             return false;
         }
-        m_LogFile = __LOG->CreateLogFile(fileDir.c_str(), fileTrucate);
-        __LOG->AddObserver(m_LogFile);
+        m_logFile = __LOG->CreateLogFile(fileDir.c_str(), fileTrucate);
+        __LOG->AddObserver(m_logFile);
     }
     //Global params load
     {
-        if (!confGlobal.GetUInt("Client", "Version", m_Version)) {
+		if (!confGlobal.GetUInt("Client", "Version", m_version)) {
             __LOG->ShowError("LoginServer::LoadConfig: Error key Global::Client:Version\n");
             return false;
         }
-        if (!confGlobal.GetString("Client", "PatchAddress", m_PatchAddress)) {
+        if (!confGlobal.GetString("Client", "PatchAddress", m_patchAddress)) {
             __LOG->ShowError("LoginServer::LoadConfig: Error key Global::Client:PatchAddress\n");
             return false;
         }
-        if (!confGlobal.GetString("LoginServer", "Address", m_Address)) {
+        if (!confGlobal.GetString("LoginServer", "Address", m_address)) {
             __LOG->ShowError("LoginServer::LoadConfig: Error key Global::LoginServer:Address\n");
             return false;
         }
-        if (!confGlobal.GetString("LoginServer", "LauncherPort", m_LauncherListenPort)) {
+		if (!confGlobal.GetString("LoginServer", "LauncherPort", m_launcherListenPort)) {
             __LOG->ShowError("LoginServer::LoadConfig: Error key Global::LoginServer:LauncherPort\n");
             return false;
         }
-        if (!confGlobal.GetString("LoginServer", "AuthServerPort", m_AuthServerListenPort)) {
+        if (!confGlobal.GetString("LoginServer", "AuthServerPort", m_authServerListenPort)) {
             __LOG->ShowError("LoginServer::LoadConfig: Error key Global::LoginServer:AuthServerPort\n");
             return false;
         }
+		if (!confGlobal.GetString("Server", "GlobalUser", m_globalUser)) {
+            __LOG->ShowError("AuthServer::LoadConfig: Error key Global::Server:GlobalUser\n");
+            return false;
+        }
+		if (!confGlobal.GetString("Server", "GlobalPass", m_globalPass)) {
+            __LOG->ShowError("AuthServer::LoadConfig: Error key Global::Server:GlobalPass\n");
+            return false;
+        }
+
+		m_authServerMgr.SetConf(m_address, m_authServerListenPort, m_globalUser, m_globalPass);
         
         byte GGkey[100];
         byte GGClientSeedKeyIni[100];
@@ -102,123 +111,83 @@ bool LoginServer::LoadConfig() {
         crypt::CryptEngine::GetInstance().SetGGCryptParams(GGClientSeedKeyIni, GGServerSeedKeyIni, GGkey);
     }
 
-    return true;
+	{//Network configure
+		if(!confGlobal.GetString("LoginServer", "Address", m_address)) {
+            __LOG->ShowError("LoginServer::LoadConfig: Error key Global::LoginServer:Address\n");
+            return false;
+        }
+		if(!confGlobal.GetString("LoginServer", "LauncherPort", m_launcherListenPort)) {
+            __LOG->ShowError("LoginServer::LoadConfig: Error key Global::LoginServer:LauncherPort\n");
+            return false;
+        }
+		if(!confGlobal.GetString("LoginServer", "AuthServerPort", m_authServerListenPort)) {
+            __LOG->ShowError("LoginServer::LoadConfig: Error key Global::LoginServer:AuthServerPort\n");
+            return false;
+        }
+
+		m_launcherListen = network::SocketMgr::GetInstance().CreateServer("ListenLaucher");
+
+		if(!m_launcherListen->Bind(m_address, m_launcherListenPort)) {
+            __LOG->ShowError("[jLoginServer] Error bind address for listen GameServers\n");
+            return false;
+        }
+	}
+	
+	return true;
 }
 
 int LoginServer::Start() {
+	m_authServerMgr.Start();
+	m_launcherListen->Start();
+	m_launcherListen->SetAcceptCallBack(boost::bind(&LoginServer::ConnectLauncher, this, _1));
+
 	getchar();
 	return 0;
 }
 
-void LoginServer::Stop() {
-    for(int i = 0; i < AUTHSERVER_SLOT_LENGTH; i++) {
-        if(m_AuthServers[i] != NULL) {
-            delete m_AuthServers[i];
-            m_AuthServers[i] = NULL;
-        }
-    }
+void LoginServer::Stop() { 
+
 }
 
-LoginServer::~LoginServer() {
-    
-}
+LoginServer::~LoginServer() { }
 
-bool LoginServer::ConnectAuthServer(network::SocketSession_ptr socketSession) {
-    m_UnauthorizedSessions[socketSession].State = UnauthorizedSession::US_WAIT_PING;
-    m_UnauthorizedSessions[socketSession].Time = ::time(NULL);
-    m_UnauthorizedSessions[socketSession].AttemptLogin = 0;
+bool LoginServer::ConnectLauncher(network::SocketSession_ptr socketSession) {
+	socketSession->SetPacketProcessCallBack(boost::bind(&LoginServer::ParsePacketLauncher, this, _1, _2));
     return true;
 }
 
-void LoginServer::ParsePacketUnauthorizedSession(network::SocketSession_ptr socketSession, Buffer_ptr buff) {
-    buff->SetReaderOffset(0);
-    if(buff->Get<uint8>() != PACKET_START_BIT || buff->Length() < PACKET_HEADER_SIZE) {
-        m_UnauthorizedSessions.erase(socketSession);
-        socketSession->Stop();
-        return;
-    }
-    
-    crypt::CryptEngine::GetInstance().XorDecrypt(buff);
-    switch (m_UnauthorizedSessions[socketSession].State) {
-        case UnauthorizedSession::US_WAIT_PING: {
-            if(buff->Get<uint>(1) != PacketAuthServer::Ping::PacketID
-                || buff->Length() != PacketAuthServer::Ping::PacketLength) {
-                m_UnauthorizedSessions.erase(socketSession);
-                socketSession->Stop();
-                return;
-            }
-            m_UnauthorizedSessions[socketSession].State =  UnauthorizedSession::US_WAIT_USERPASS;
-            m_UnauthorizedSessions[socketSession].Time = ::time(NULL);
-            break;
-        }
-        case UnauthorizedSession::US_WAIT_USERPASS: {
-            if(buff->Get<uint>(1) != PacketAuthServer::AuthServer::PacketID) {
-                m_UnauthorizedSessions.erase(socketSession);
-                socketSession->Stop();
-                return;
-            }
-            PacketAuthServer::AuthServer authServer(buff, m_GlobalUser.c_str(), m_GlobalPass.c_str());
-            if(authServer.IsAuthenticated()) {
-                uint8 slotnum = authServer.GetSlot();
-                if(m_AuthServers[slotnum] != NULL) {
-                    bool slotfound = false;
-                    for(slotnum++;slotnum < AUTHSERVER_SLOT_LENGTH;slotnum++) {
-                        if(m_AuthServers[slotnum] == NULL) {
-                            slotfound = true;
-                            break;
-                        }
-                    }
-                    if(!slotfound) {
-                        for(slotnum = authServer.GetSlot();slotnum >= 0;slotnum--) {
-                            if(m_AuthServers[slotnum] == NULL) {
-                                slotfound = true;
-                                break;
-                            }
-                        }
-                    }
-                    if(!slotfound) {
-                        m_UnauthorizedSessions.erase(socketSession);
-                        PacketServer_AuthServer::AuthServer authRes(0, PacketServer_AuthServer::AuthServer::EA_SERVER_FULL);
-                        socketSession->SendPacket(authRes.GetProcessedBuffer());
-                        socketSession->Stop();
-                        return;
-                    }
-                    
-                }
-
-                 m_UnauthorizedSessions.erase(socketSession);
-                 m_AuthServers[slotnum] = new AuthServer(socketSession, this);
-            } else {
-                if(m_UnauthorizedSessions[socketSession].AttemptLogin == MAX_AUTHSERVER_LOGIN_ATTEMPTS) {
-                    m_UnauthorizedSessions.erase(socketSession);
-                    PacketServer_AuthServer::AuthServer authRes(0, PacketServer_AuthServer::AuthServer::EA_MAX_LOGIN_ATTEMPTS);
-                    socketSession->SendPacket(authRes.GetProcessedBuffer());
-                    socketSession->Stop();
-                } else {
-                    PacketServer_AuthServer::AuthServer authRes(0, PacketServer_AuthServer::AuthServer::EA_USER_PASS_INCORRECT);
-                    socketSession->SendPacket(authRes.GetProcessedBuffer());
-                    m_UnauthorizedSessions[socketSession].AttemptLogin++;
-                }
-            }
-            break;
-        }
-        default:
-            m_UnauthorizedSessions.erase(socketSession);
-            socketSession->Stop();
-            break;
-    }
+void LoginServer::ParsePacketLauncher(network::SocketSession_ptr socketSession, Buffer_ptr buff) {
+	buff->SetReaderOffset(0);
+	
+	switch(buff->Get<uint8>(1)) {
+	case packet::Ping::PacketID:
+		break;
+	case packet::ServerListAsk::PacketID:
+		packet::ServerList sl;
+		AuthServer** authServerList = m_authServerMgr.GetAuthServerList();
+		packet::ServerList::AuthServer* authserver = sl.GetAuthServers();
+		int numServer = 0;
+		for(int i = 0; i < AUTHSERVER_SLOT_LENGTH; i++) {
+			if(authServerList[i] != NULL && authServerList[i]->GetStatus() == AuthServer::ASS_OK) {
+				authserver[numServer].Group = authServerList[i]->GetGroup();
+				authserver[numServer].Name = authServerList[i]->GetName();
+				authserver[numServer].Address = authServerList[i]->GetAddress();
+				authserver[numServer].ClientNum[0] = 0;
+				authserver[numServer].ClientNum[1] = 0;
+				numServer++;
+			}
+		}
+		if(numServer > 0) {		
+			sl.SetClientVersion(m_version);
+			sl.SetPatchAddress(m_patchAddress);
+			sl.SetNumServers(numServer);
+		} else {
+			sl.SetErro(packet::ServerList::SLE_ServerUnavailable);
+		}
+		socketSession->SendPacket(sl);
+		break;
+	}
 }
-
-void LoginServer::CloseAuthServer(AuthServer* authServer) {
-    for(int i = 0; i < AUTHSERVER_SLOT_LENGTH; i++) {
-        if(m_AuthServers[i] == authServer) {
-            delete m_AuthServers[i];
-            m_AuthServers[i] = NULL;
-            break;
-        }
-    }
-}
-
 
 } //namespace jLoginServer
 } //namespace jRylServer

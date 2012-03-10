@@ -20,6 +20,7 @@ PacketBase::PacketBase(uint8 command, uint16 packetLength) {
     m_Status = 0;
     m_Compressed = false;
     m_Buffer.reset(new Buffer(packetLength));
+	m_Buffer->SetLength(packetLength);
     m_Buffer->SetWriteOffset(PACKET_HEADER_SIZE);
 }
 
@@ -56,7 +57,9 @@ PacketBase::PacketBase(Buffer_ptr buffer) {
 }
 
 Buffer_ptr PacketBase::GetProcessedBuffer() {
-    if (m_Compressed) {
+	m_Buffer->SetWriteOffset(PACKET_HEADER_SIZE);
+	ProcessPacket();
+	if (m_Compressed) {
         BYTE wrkmen[LZO1X_1_MEM_COMPRESS];
         LPBYTE dst = new BYTE[(m_Buffer->Length() - PACKET_HEADER_SIZE) + (m_Buffer->Length() - PACKET_HEADER_SIZE) / 16 + 64 + 3];
         lzo_uint dstLen;
@@ -79,9 +82,10 @@ Buffer_ptr PacketBase::GetProcessedBuffer() {
       Add(m_Length).
       AddPack(m_Key).
       Add(m_Status);
-    CryptEngine::GetInstance().XorCrypt(m_Buffer, m_Key);
+
     return m_Buffer;
 }
+
 } //namespace shared
 } //namespace common
 } //namespace jRylServer

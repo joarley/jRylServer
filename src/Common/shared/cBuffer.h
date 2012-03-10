@@ -297,7 +297,7 @@ template<> inline char* Buffer::GetString<char*>() {
         return NULL;
     }
     size_t size = strlen((char*) &m_buffer[m_readerOffset]) + 1;
-    if (m_readerOffset + size >= m_length) {
+    if (m_readerOffset + size > m_length) {
         return NULL;
     }
     char* value = new char[size];

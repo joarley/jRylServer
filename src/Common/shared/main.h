@@ -31,9 +31,9 @@ void sighandler(int signum, siginfo_t *info, void *ptr);
 
 bool StartSignalCtrl();
 
-StartupClass* Main;
-
 #ifdef STARTUP_CLASS
+
+StartupClass* Main;
 
 int main(int argc, char *argv[]) {
 

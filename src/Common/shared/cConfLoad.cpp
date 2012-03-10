@@ -28,7 +28,7 @@ bool ConfLoad::GetBool(const char* section, const char* key, bool &ret) {
     if(aux == -1) {
         return false;    
     }
-    ret = (bool)aux;
+    ret = aux != 0;
     return true;
     
 }
